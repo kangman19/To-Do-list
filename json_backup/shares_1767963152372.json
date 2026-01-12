@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1767774411700,
+    "ownerId": 1767769997045,
+    "ownerUsername": "Tim",
+    "category": "Work",
+    "sharedWithUserId": 1767769655689,
+    "createdAt": "2026-01-07T08:26:51.701Z"
+  },
+  {
+    "id": 1767779950690,
+    "ownerId": 1767779877423,
+    "ownerUsername": "jade",
+    "category": "fyut",
+    "sharedWithUserId": 1767769655689,
+    "createdAt": "2026-01-07T09:59:10.690Z"
+  },
+  {
+    "id": 1767796371883,
+    "ownerId": 1767769655689,
+    "ownerUsername": "Kang",
+    "category": "cut grass",
+    "sharedWithUserId": 1767769997045,
+    "createdAt": "2026-01-07T14:32:51.883Z"
+  },
+  {
+    "id": 1767796852823,
+    "ownerId": 1767769655689,
+    "ownerUsername": "Kang",
+    "category": "service",
+    "sharedWithUserId": 1767769997045,
+    "createdAt": "2026-01-07T14:40:52.823Z"
+  }
+]

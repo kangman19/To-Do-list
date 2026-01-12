@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1767769655689,
+    "username": "Kang",
+    "email": "",
+    "password": "$2b$10$e/ckyX4jSwwj0gzTfm/z5OokEg7rReyufKGQyePIGAQx05RqtW/D.",
+    "createdAt": "2026-01-07T07:07:35.689Z"
+  },
+  {
+    "id": 1767769997045,
+    "username": "Tim",
+    "email": "",
+    "password": "$2b$10$9DdUwwflxo18/Q.OFr5xVe4iWwPwPQUN8UFf5WWFLSMmzhSTiWfEi",
+    "createdAt": "2026-01-07T07:13:17.045Z"
+  },
+  {
+    "id": 1767779877423,
+    "username": "jade",
+    "email": "",
+    "password": "$2b$10$WA.PT8ruXjtOou0xDs3seeL0ETJpRZuO5/04wut5/NW1QPi9aXqCe",
+    "createdAt": "2026-01-07T09:57:57.423Z"
+  }
+]
