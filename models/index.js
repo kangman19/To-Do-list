@@ -15,7 +15,7 @@ const sequelize = new Sequelize('todo_app', 'root', '', {
 
 // Import models
 const User = require('./users')(sequelize);
-const Task = require('./tasks')(sequelize);
+const Task = require('../src/models/tasks')(sequelize);
 const Share = require('./shares')(sequelize);
 
 // Define associations

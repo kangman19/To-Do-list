@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+
+    "rootDir": "./",
+
+
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+
+    
+    "allowJs": true,
+    "checkJs": false,
+
+    
+    "declaration": false,
+    "sourceMap": true
+  },
+
+  //Scans files
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
