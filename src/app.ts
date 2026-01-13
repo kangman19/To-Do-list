@@ -7,7 +7,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import path from 'path';
 import { Op } from 'sequelize';
 import { sequelize, User, Task, Share } from './models/index.js';
-import authRoutes from '../routes/auth.js';
+import authRoutes from './routes/auth.js';
 import { JwtPayload, AuthRequest } from './types'; 
 
 const app = express();
