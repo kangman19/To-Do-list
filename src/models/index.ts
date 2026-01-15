@@ -1,4 +1,3 @@
-// src/models/index.ts
 import { Sequelize } from 'sequelize';
 import UserModel, { User } from '../models/users';
 import TaskModel, { Task } from '../models/tasks';

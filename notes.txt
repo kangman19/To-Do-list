@@ -1,0 +1,31 @@
+Purpose of file: Keeping track of files with separation of concerns. Directions etc
+
+src/
+├── config/
+│   ├── database.ts          // Database connection & config  sequelise setup
+│   └── passport.ts          // Passport JWT strategy setup
+├── middleware/
+│   ├── auth.ts              // Authentication middleware      reusable authentication "passport.authenticate('jwt', { session: false })"
+│   └── errorHandler.ts      // Global error handler
+├── controllers/
+│   ├── taskController.ts    // All task-related logic
+│   ├── shareController.ts   // All share-related logic
+│   └── userController.ts    // User-related logic
+├── routes/
+│   ├── auth.ts              // Auth routes     defines endpoints, signup/login logic, handles requests & responses
+│   ├── tasks.ts             // Task routes
+│   ├── shares.ts            // Share routes
+│   └── index.ts             // Combine all routes
+├── services/
+│   ├── taskService.ts       // Business logic for tasks everything task related
+│   └── socketService.ts     // Socket.io logic  
+├── models/                 //ORM
+│   ├── index.ts
+│   ├── User.ts
+│   ├── Task.ts
+│   └── Share.ts
+├── types/
+│   └── index.ts
+├── utils/
+│   └── constants.ts         // JWT_SECRET, PORT, etc. centralises config values
+└── app.ts                   // Slim entry point
