@@ -1,5 +1,5 @@
 Purpose of file: Keeping track of files with separation of concerns. Directions etc
-
+Backend
 src/
 ├── config/
 │   ├── database.ts          // Database connection & config  sequelise setup
@@ -25,7 +25,20 @@ src/
 │   ├── Task.ts
 │   └── Share.ts
 ├── types/
-│   └── index.ts
+│   └── index.ts           //center for files to call functions
 ├── utils/
 │   └── constants.ts         // JWT_SECRET, PORT, etc. centralises config values
 └── app.ts                   // Slim entry point
+
+Frontend
+web-interface/
+├── js/
+│   ├── socket.js         // All Socket.IO event handling
+│   ├── auth.js           // Login, logout, check user
+│   ├── tasks.js          // Add, delete, toggle, load tasks
+│   ├── categories.js     // Category select logic, new category input
+│   ├── share.js          // Share modal logic
+│   └── form.js           // Dynamic form behavior (text/image fields)
+├── styles.css
+├── home.html
+└── login.html
