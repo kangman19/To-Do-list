@@ -1,49 +1,12 @@
-export function initSignupForm(formId = 'signupForm', messageId = 'message') {
-  const form = document.getElementById(formId);
-  const messageEl = document.getElementById(messageId);
+export async function initLoginForm() {
+  const form = document.getElementById('loginForm');
+  const messageEl = document.getElementById('message');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = form.querySelector('#username').value;
-    const password = form.querySelector('#password').value;
-
-    try {
-      const response = await fetch('/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-
-      const text = await response.text();
-      let result;
-      try { result = JSON.parse(text); } catch { result = {}; }
-
-      if (response.ok) {
-        messageEl.style.color = 'green';
-        messageEl.textContent = result.message || 'Account created successfully!';
-        localStorage.setItem('token', result.token);
-        form.reset();
-        window.location.href = '/';
-      } else {
-        messageEl.style.color = 'red';
-        messageEl.textContent = result.message || text || 'Error creating account';
-      }
-    } catch (error) {
-      console.error('Signup error:', error);
-      messageEl.style.color = 'red';
-      messageEl.textContent = 'Network error: ' + error.message;
-    }
-  });
-}
-
-export function initLoginForm(formId = 'loginForm', messageId = 'message') {
-  const form = document.getElementById(formId);
-  const messageEl = document.getElementById(messageId);
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = form.querySelector('#username').value;
-    const password = form.querySelector('#password').value;
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
 
     try {
       const response = await fetch('/auth/login', {
@@ -52,24 +15,53 @@ export function initLoginForm(formId = 'loginForm', messageId = 'message') {
         body: JSON.stringify({ username, password })
       });
 
-      const text = await response.text();
-      let result;
-      try { result = JSON.parse(text); } catch { result = {}; }
-
       if (response.ok) {
-        messageEl.style.color = 'green';
-        messageEl.textContent = result.message || 'Login successful!';
-        localStorage.setItem('token', result.token);
-        form.reset();
-        setTimeout(() => { window.location.href = '/'; }, 100);
+        const data = await response.json();
+        localStorage.setItem('token', data.token);
+        window.location.href = '/';
       } else {
+        const error = await response.json();
+        messageEl.textContent = error.message || 'Login failed';
         messageEl.style.color = 'red';
-        messageEl.textContent = result.message || text || 'Login failed';
       }
     } catch (error) {
-      console.error('Login error:', error);
-      messageEl.style.color = 'red';
       messageEl.textContent = 'Network error: ' + error.message;
+      messageEl.style.color = 'red';
+    }
+  });
+}
+
+export async function initSignupForm() {
+  const form = document.getElementById('signupForm');
+  const messageEl = document.getElementById('message');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+      const response = await fetch('/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (response.ok) {
+        messageEl.textContent = 'Account created! Redirecting to login...';
+        messageEl.style.color = 'green';
+        setTimeout(() => {
+          window.location.href = '/login.html';
+        }, 2000);
+      } else {
+        const error = await response.json();
+        messageEl.textContent = error.message || 'Signup failed';
+        messageEl.style.color = 'red';
+      }
+    } catch (error) {
+      messageEl.textContent = 'Network error: ' + error.message;
+      messageEl.style.color = 'red';
     }
   });
 }

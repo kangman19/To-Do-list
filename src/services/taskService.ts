@@ -1,9 +1,9 @@
-// src/services/taskService.ts
 import { Task, User, Share } from '../models/index.js';
+import { TasksByCategory, TaskWithUser } from '../types/index.js';
 
 export class TaskService {
-  // Get user's own tasks and shared tasks
-  async getUserTasks(userId: number) {
+
+  async getUserTasks(userId: number): Promise<TasksByCategory> {
     // Get user's own tasks
     const userTasks = await Task.findAll({
       where: { userId },
@@ -14,32 +14,45 @@ export class TaskService {
       order: [['createdAt', 'DESC']]
     });
 
-    const tasksByCategory: any = {};
+    const tasksByCategory: TasksByCategory = {};
 
     userTasks.forEach((task: any) => {
       const category = task.category || 'Uncategorized';
+
       if (!tasksByCategory[category]) {
-        tasksByCategory[category] = { tasks: [], shared: false, sharedBy: null };
+        tasksByCategory[category] = {
+          tasks: [],
+          shared: false,
+          sharedBy: null
+        };
       }
 
       const taskData: any = task.toJSON();
-      taskData.username = taskData.user?.username || 'Unknown';
-      taskData.completedBy = taskData.completedByUser?.username || null;
-      delete taskData.user;
-      delete taskData.completedByUser;
+      const formattedTask: TaskWithUser = {
+        ...taskData,
+        username: taskData.user?.username || 'Unknown',
+        completedBy: taskData.completedByUser?.username || null
+      };
 
-      tasksByCategory[category].tasks.push(taskData);
+      delete (formattedTask as any).user;
+      delete (formattedTask as any).completedByUser;
+
+      tasksByCategory[category].tasks.push(formattedTask);
     });
 
-    // Get shared tasks
+    // Get shared categories
     const sharedCategories = await Share.findAll({
       where: { sharedWithUserId: userId },
       include: [{ model: User, as: 'owner', attributes: ['username'] }]
     });
 
+    // Attach shared tasks
     for (const share of sharedCategories) {
       const sharedTasks = await Task.findAll({
-        where: { userId: share.ownerId, category: share.category },
+        where: {
+          userId: share.ownerId,
+          category: share.category
+        },
         include: [
           { model: User, as: 'user', attributes: ['username'] },
           { model: User, as: 'completedByUser', attributes: ['username'] }
@@ -47,13 +60,18 @@ export class TaskService {
         order: [['createdAt', 'DESC']]
       });
 
-      const formattedSharedTasks = sharedTasks.map((task: any) => {
+      const formattedSharedTasks: TaskWithUser[] = sharedTasks.map((task: any) => {
         const taskData: any = task.toJSON();
-        taskData.username = taskData.user?.username || 'Unknown';
-        taskData.completedBy = taskData.completedByUser?.username || null;
-        delete taskData.user;
-        delete taskData.completedByUser;
-        return taskData;
+        const formattedTask: TaskWithUser = {
+          ...taskData,
+          username: taskData.user?.username || 'Unknown',
+          completedBy: taskData.completedByUser?.username || null
+        };
+
+        delete (formattedTask as any).user;
+        delete (formattedTask as any).completedByUser;
+
+        return formattedTask;
       });
 
       tasksByCategory[share.category] = {
@@ -66,13 +84,14 @@ export class TaskService {
     return tasksByCategory;
   }
 
-  // Create a new task
   async createTask(
     userId: number,
     task: string,
     category?: string,
-    ownerId?: number
-  ) {
+    ownerId?: number,
+    taskType?: string,
+    imageUrl?: string
+  ): Promise<any> {
     const taskUserId = ownerId || userId;
 
     const newTask = await Task.create({
@@ -83,7 +102,9 @@ export class TaskService {
       createdAt: new Date(),
       completed: false,
       completedAt: null,
-      completedById: null
+      completedById: null,
+      taskType: taskType || 'list',
+      imageUrl: imageUrl || null
     });
 
     const taskWithUser = await Task.findByPk(newTask.id, {
@@ -106,8 +127,7 @@ export class TaskService {
     };
   }
 
-  // Toggle task completion
-  async toggleTask(taskId: number, userId: number) {
+  async toggleTask(taskId: number, userId: number): Promise<any> {
     const task = await Task.findByPk(taskId);
 
     if (!task) {
@@ -138,33 +158,38 @@ export class TaskService {
     }
 
     const taskData: any = taskWithUser.toJSON();
-    taskData.username = taskData.user?.username || 'Unknown';
-    taskData.completedBy = taskData.completedByUser?.username || null;
-    delete taskData.user;
-    delete taskData.completedByUser;
+    const formattedTask: TaskWithUser = {
+      ...taskData,
+      username: taskData.user?.username || 'Unknown',
+      completedBy: taskData.completedByUser?.username || null
+    };
+
+    delete (formattedTask as any).user;
+    delete (formattedTask as any).completedByUser;
 
     return {
-      task: taskData,
-      category: task.category,
-      userId: task.userId
+      task: formattedTask,
+      userId: task.userId,
+      category: task.category
     };
   }
 
-  // Delete a task
-  async deleteTask(taskId: number) {
+  async deleteTask(
+    taskId: number
+  ): Promise<{ userId: number; category: string }> {
     const task = await Task.findByPk(taskId);
 
     if (!task) {
       throw new Error('Task not found');
     }
 
-    const taskData = {
+    const deletedTaskData = {
       userId: task.userId,
       category: task.category
     };
 
     await task.destroy();
 
-    return taskData;
+    return deletedTaskData;
   }
 }

@@ -1,17 +1,9 @@
-import { DataTypes, Model, Sequelize } from 'sequelize';
+import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
+import { TaskAttributes } from '../types';
 
-export interface TaskAttributes {
-  id: number;
-  userId: number;
-  task: string;
-  category: string;
-  createdAt: Date;
-  completed: boolean;
-  completedAt: Date | null;
-  completedById: number | null;
-}
+type TaskCreationAttributes = Optional<TaskAttributes, 'id' | 'completed' | 'completedAt' | 'completedById'>;
 
-export class Task extends Model<TaskAttributes> implements TaskAttributes {
+class Task extends Model<TaskAttributes, TaskCreationAttributes> implements TaskAttributes {
   public id!: number;
   public userId!: number;
   public task!: string;
@@ -20,6 +12,8 @@ export class Task extends Model<TaskAttributes> implements TaskAttributes {
   public completed!: boolean;
   public completedAt!: Date | null;
   public completedById!: number | null;
+  public taskType?: string;
+  public imageUrl?: string | null;
 }
 
 export default (sequelize: Sequelize) => {
@@ -27,16 +21,11 @@ export default (sequelize: Sequelize) => {
     {
       id: {
         type: DataTypes.BIGINT,
-        primaryKey: true,
-        allowNull: false
+        primaryKey: true
       },
       userId: {
-        type: DataTypes.BIGINT,
-        allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id'
-        }
+        type: DataTypes.INTEGER,
+        allowNull: false
       },
       task: {
         type: DataTypes.TEXT,
@@ -44,7 +33,8 @@ export default (sequelize: Sequelize) => {
       },
       category: {
         type: DataTypes.STRING(100),
-        allowNull: false
+        allowNull: false,
+        defaultValue: 'Uncategorized'
       },
       createdAt: {
         type: DataTypes.DATE,
@@ -61,23 +51,16 @@ export default (sequelize: Sequelize) => {
         allowNull: true
       },
       completedById: {
-        type: DataTypes.BIGINT,
-        allowNull: true,
-        references: {
-          model: 'users',
-          key: 'id'
-        }
-      }
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
+
+
     },
     {
       sequelize,
       tableName: 'tasks',
-      timestamps: false,
-      indexes: [
-        { fields: ['userId'] },
-        { fields: ['category'] },
-        { fields: ['userId', 'category'] }
-      ]
+      timestamps: false
     }
   );
 

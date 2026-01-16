@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { TaskController } from '../controllers/taskController';
-import { requireAuth } from '../middleware/auth';
-import { SocketService } from '../services/socketService';
+import { TaskController } from '../controllers/taskController.js';
+import { requireAuth } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
+import { SocketService } from '../services/socketService.js';
 
 export const createTaskRouter = (socketService: SocketService) => {
   const router = Router();
@@ -13,8 +14,8 @@ export const createTaskRouter = (socketService: SocketService) => {
   // GET /api/tasks - Get all tasks
   router.get('/', taskController.getTasks);
 
-  // POST /api/tasks - Create a new task
-  router.post('/', taskController.createTask);
+  // POST /api/tasks - Create a new task (with optional image upload)
+  router.post('/', upload.single('image'), taskController.createTask);
 
   // POST /api/tasks/:taskId/toggle - Toggle task completion
   router.post('/:taskId/toggle', taskController.toggleTask);

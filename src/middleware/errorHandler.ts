@@ -28,6 +28,7 @@ export const errorHandler = (
   });
 };
 
+
 export const notFound = (req: Request, res: Response, next: NextFunction) => {
   const error: AppError = new Error(`Not found - ${req.originalUrl}`);
   error.statusCode = 404;

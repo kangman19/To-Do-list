@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>To-Do List App</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
@@ -28,21 +29,6 @@
         <option value="">Select or enter category</option>
       </select>
 
-      <select id="taskSelect" placeholder="Type of task" required>
-        <option value="">Select task type</option>
-        <option value="list">List</option>
-        <option value="text">Text</option>
-        <option value="image">Image</option>
-      </select>
-
-      <fieldset id="textFieldset" style="display:none;">
-        <textarea id="textAreaInput" placeholder="Enter text here"></textarea>
-      </fieldset>
-
-      <fieldset id="imageFieldset" style="display:none;">
-        <input type="file" id="imageInput" accept="image/*">
-      </fieldset>
-
       <input id="newCategoryInput" placeholder="New category (or existing)" style="display:none;">
       
       <button type="submit">Add Task</button>
@@ -54,7 +40,7 @@
   </div>
 
   <!-- Share Modal -->
-  <div id="shareModal">
+  <div id="shareModal" style="display:none;">
     <div class="modal-content">
       <h3>Share Folder</h3>
       <p>Share with:</p>
@@ -67,9 +53,22 @@
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="js/app.js"></script>
+  <!-- Reminder Modal -->
+  <div id="reminderModal" style="display:none;">
+    <div class="modal-content">
+      <h3>Send Reminder</h3>
+      <p>Send reminder to:</p>
+      <select id="reminderUserSelect">
+        <option value="">Select a user</option>
+      </select>
+      <br><br>
+      <textarea id="reminderMessage" placeholder="Enter your reminder message here"></textarea>
+      <br><br>
+      <button onclick="confirmSendReminder()">Send Reminder</button>
+      <button onclick="closeReminderModal()">Cancel</button>
+    </div>
+
+  <script type="module" src="/js/main.js"></script>
 
 </body>
 </html>

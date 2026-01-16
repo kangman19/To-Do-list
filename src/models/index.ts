@@ -1,69 +1,44 @@
 import { Sequelize } from 'sequelize';
-import UserModel, { User } from '../models/users';
-import TaskModel, { Task } from '../models/tasks';
-import ShareModel, { Share } from '../models/shares';
+import UserModel from './users';
+import TaskModel from './tasks';
+import ShareModel from './shares';
+import ReminderModel from './reminders';
 
+// Initialize Sequelize
 const sequelize = new Sequelize('todo_app', 'root', '', {
   host: 'localhost',
   dialect: 'mysql',
-  logging: false,
-  pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
-  }
+  logging: false
 });
 
 // Initialize models
-const UserInstance = UserModel(sequelize);
-const TaskInstance = TaskModel(sequelize);
-const ShareInstance = ShareModel(sequelize);
+const User = UserModel(sequelize);
+const Task = TaskModel(sequelize);
+const Share = ShareModel(sequelize);
+const Reminder = ReminderModel(sequelize);
 
 // Define associations
-// User has many Tasks
-UserInstance.hasMany(TaskInstance, {
-  foreignKey: 'userId',
-  as: 'tasks'
-});
-TaskInstance.belongsTo(UserInstance, {
-  foreignKey: 'userId',
-  as: 'user'
+User.hasMany(Task, { foreignKey: 'userId', as: 'tasks' });
+Task.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+Task.belongsTo(User, { 
+  foreignKey: 'completedById', 
+  as: 'completedByUser' 
 });
 
-// Task belongs to User (for completedBy)
-TaskInstance.belongsTo(UserInstance, {
-  foreignKey: 'completedById',
-  as: 'completedByUser'
-});
+User.hasMany(Share, { foreignKey: 'ownerId', as: 'ownedShares' });
+User.hasMany(Share, { foreignKey: 'sharedWithUserId', as: 'receivedShares' });
 
-// Share belongs to User (owner)
-ShareInstance.belongsTo(UserInstance, {
-  foreignKey: 'ownerId',
-  as: 'owner'
-});
+Share.belongsTo(User, { foreignKey: 'ownerId', as: 'owner' });
+Share.belongsTo(User, { foreignKey: 'sharedWithUserId', as: 'sharedWith' });
 
-// Share belongs to User (shared with)
-ShareInstance.belongsTo(UserInstance, {
-  foreignKey: 'sharedWithUserId',
-  as: 'sharedWithUser'
-});
+// Reminder associations
+User.hasMany(Reminder, { foreignKey: 'remindedUserId', as: 'receivedReminders' });
+User.hasMany(Reminder, { foreignKey: 'remindedByUserId', as: 'sentReminders' });
+Task.hasMany(Reminder, { foreignKey: 'taskId', as: 'reminders' });
 
-// User has many Shares (as owner)
-UserInstance.hasMany(ShareInstance, {
-  foreignKey: 'ownerId',
-  as: 'sharedByMe'
-});
+Reminder.belongsTo(User, { foreignKey: 'remindedUserId', as: 'remindedUser' });
+Reminder.belongsTo(User, { foreignKey: 'remindedByUserId', as: 'remindedByUser' });
+Reminder.belongsTo(Task, { foreignKey: 'taskId', as: 'task' });
 
-// User has many Shares (as recipient)
-UserInstance.hasMany(ShareInstance, {
-  foreignKey: 'sharedWithUserId',
-  as: 'sharedWithMe'
-});
-
-export {
-  sequelize,
-  UserInstance as User,
-  TaskInstance as Task,
-  ShareInstance as Share
-};
+export { sequelize, User, Task, Share, Reminder };
