@@ -1,14 +1,17 @@
 import { Sequelize } from 'sequelize';
-import { DB_CONFIG } from '../utils/constants.js';
+import dotenv from 'dotenv';
+
+dotenv.config(); // load .env variables
 
 export const sequelize = new Sequelize(
-  DB_CONFIG.database,
-  DB_CONFIG.username,
-  DB_CONFIG.password,
+  process.env.DB_NAME!,       
+  process.env.DB_USER!,       
+  process.env.DB_PASSWORD!,   
   {
-    host: DB_CONFIG.host,
-    dialect: DB_CONFIG.dialect,
-    logging: false, //disables every sql query being printed to console
+    host: process.env.DB_HOST!,   
+    port: parseInt(process.env.DB_PORT!) || 3306, 
+    dialect: 'mysql',
+    logging: false, // disable SQL logs
     pool: {
       max: 5,
       min: 0,

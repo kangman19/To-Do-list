@@ -1,7 +1,7 @@
 import { Request } from 'express';
-import { Socket } from 'socket.io';
+import SocketIO from 'socket.io';
 
-
+// JWT Payload interface
 export interface JwtPayload {
   userId: number;
   username: string;
@@ -9,29 +9,23 @@ export interface JwtPayload {
   exp?: number;
 }
 
+// AuthUser is what req.user should contain after authentication
+export interface AuthUser {
+  userId: number;
+  username: string;
+}
+
+// Extend Express Request to include user from JWT
 export interface AuthRequest<
   P = {},
   ResBody = any,
   ReqBody = any,
-  ReqQuery = {}
+  ReqQuery = any
 > extends Request<P, ResBody, ReqBody, ReqQuery> {
-  user?: JwtPayload;
+  user: AuthUser;
 }
 
-// Tell Express what req.user looks like 
-declare global {
-  namespace Express {
-    interface User extends JwtPayload {}
-  }
-}
-
-export interface AuthenticatedSocket extends Socket {
-  userId?: number;
-  username?: string;
-}
-
-//User types
-
+// User interfaces
 export interface UserAttributes {
   id: number;
   username: string;
@@ -47,24 +41,7 @@ export interface UserCreationAttributes {
   password: string;
 }
 
-//task types
-
-export interface TaskWithUser {
-  id: number;
-  title: string;
-  description: string;
-  completed: boolean;
-  completedAt: Date | null;
-  completedById: number | null;
-  userId: number;
-  category: string;
-  createdAt: Date;
-  updatedAt: Date;
-  username: string;
-  completedBy: string | null;
-}
-
-// sequelize task types
+// Task interfaces
 export interface TaskAttributes {
   id: number;
   userId: number;
@@ -74,7 +51,7 @@ export interface TaskAttributes {
   completed: boolean;
   completedAt: Date | null;
   completedById: number | null;
-  taskType?: string; // 'list' | 'text' | 'image'
+  taskType?: string; // 'list', 'text', 'image'
   imageUrl?: string | null;
 }
 
@@ -87,17 +64,16 @@ export interface TaskCreationAttributes {
   completed: boolean;
   completedAt: Date | null;
   completedById: number | null;
+  taskType?: string;
+  imageUrl?: string | null;
 }
 
-
-export interface TasksByCategory {
-  [category: string]: {
-    tasks: TaskWithUser[];
-    shared: boolean;
-    sharedBy: string | null;
-  };
+export interface TaskWithUser extends TaskAttributes {
+  username?: string;
+  completedBy?: string | null;
 }
-// Share types
+
+// Share interfaces
 export interface ShareAttributes {
   id: number;
   ownerId: number;
@@ -114,28 +90,24 @@ export interface ShareCreationAttributes {
   createdAt: Date;
 }
 
-
-export interface CreateTaskBody {
-  task: string;
-  category?: string;
-  ownerId?: number;
-  taskType?: string;
-  taskByCategory?: TasksByCategory[];
+// Category data structure
+export interface CategoryData {
+  tasks: TaskWithUser[];
+  shared: boolean;
+  sharedBy: string | null;
 }
 
-export interface CreateShareBody {
-  sharedWithUserId: number;
-  title?: string;
-  description?: string;
-  category?: string;
+export interface TasksByCategory {
+  [category: string]: CategoryData;
 }
 
-export interface CreateReminderBody {
-  taskId: number;
-  remindedUserId: number;
-  message?: string;
+// Socket interfaces
+export interface AuthenticatedSocket extends SocketIO.Socket {
+  userId?: number;
+  username?: string;
 }
 
+// Request body interfaces
 export interface SignupBody {
   username: string;
   password: string;
@@ -145,4 +117,22 @@ export interface SignupBody {
 export interface LoginBody {
   username: string;
   password: string;
+}
+
+export interface CreateTaskBody {
+  task: string;
+  category: string;
+  ownerId?: number;
+  taskType?: string;
+}
+
+export interface CreateShareBody {
+  category: string;
+  sharedWithUserId: number;
+}
+
+export interface CreateReminderBody {
+  taskId: number;
+  remindedUserId: number;
+  message?: string;
 }

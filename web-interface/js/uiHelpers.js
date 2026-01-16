@@ -1,3 +1,5 @@
+// web-interface/js/uiHelpers.js
+
 export function displayTasks(tasksByCategory, categoryOwners) {
   const allCategories = new Set();
   
@@ -38,13 +40,7 @@ export function displayTasks(tasksByCategory, categoryOwners) {
       shareBtn.onclick = () => window.openShareModal(category);
       headerDiv.appendChild(shareBtn);
     }
-//reminder button
-const remindBtn = document.createElement('button');
-remindBtn.className = 'share-btn';
-remindBtn.textContent = 'Remind';
-remindBtn.style.background = '#f59e0b';
-remindBtn.onclick = () => window.openReminderModal(category);
-headerDiv.appendChild(remindBtn);
+    
     categoryDiv.appendChild(headerDiv);
     
     const taskList = document.createElement('ul');
@@ -54,11 +50,33 @@ headerDiv.appendChild(remindBtn);
       const li = document.createElement('li');
       const strikethrough = task.completed ? 'style="text-decoration: line-through; color: #999;"' : '';
       
+      let taskContentHTML = '';
+      
+      // Render based on task type
+      if (task.taskType === 'image' && task.imageUrl) {
+        taskContentHTML = `
+          <div class="task-image-container">
+            <img src="${task.imageUrl}" alt="${task.task}" class="task-image">
+            <p ${strikethrough}><strong>${task.task}</strong></p>
+          </div>
+        `;
+      } else if (task.taskType === 'text' && task.textContent) {
+        taskContentHTML = `
+          <div class="task-text-container">
+            <p ${strikethrough}><strong>${task.task}</strong></p>
+            <p class="task-text-content">${task.textContent}</p>
+          </div>
+        `;
+      } else {
+        // Default list item
+        taskContentHTML = `<span ${strikethrough}>"${task.task}"</span>`;
+      }
+      
       li.innerHTML = `
         <input type="checkbox" ${task.completed ? 'checked' : ''} 
                onchange="window.toggleTaskHandler(${task.id})" 
                style="margin-right: 10px; cursor: pointer;">
-        <span ${strikethrough}>"${task.task}"</span>
+        ${taskContentHTML}
         <span style="font-size: 0.85em; color: #666; margin-left: 10px;">
           Created by: ${task.username} ${task.createdAt}
         </span> 

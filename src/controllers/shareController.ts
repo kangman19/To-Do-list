@@ -1,15 +1,11 @@
 import { Response } from 'express';
-import { AuthRequest, CreateShareBody } from '../types/index.js';
+import { AuthRequest } from '../types/index.js';
 import { Share } from '../models/index.js';
 
 export class ShareController {
   // Create a share
-  createShare = async (req: AuthRequest<{}, {}, CreateShareBody>, res: Response) => {
+  createShare = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
       const { category, sharedWithUserId } = req.body;
 
       if (!category || !sharedWithUserId) {
@@ -47,7 +43,8 @@ export class ShareController {
     }
   };
 
-  // You can add more share-related methods here:
-  // - getShares (get all shares for a user)
-  // - deleteShare (unshare a category)
 }
+  /* getShares (get all shares for a user)
+   deleteShare (unshare a category) 
+
+   can be implemented later, fix basic issues first */

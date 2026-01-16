@@ -5,10 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 const router = Router();
 const shareController = new ShareController();
 
-// All routes require authentication
-router.use(requireAuth);
-
 // POST /api/shares - Share a category with a user
-router.post('/', shareController.createShare);
+router.post('/', requireAuth, shareController.createShare);
 
 export default router;

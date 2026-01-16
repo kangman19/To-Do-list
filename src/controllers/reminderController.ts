@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { AuthRequest } from '../types/index.js';
-import { Reminder, User } from '../models/index.js';
+import { AuthRequest, CreateReminderBody } from '../types/index.js';
+import { Reminder, Task, User } from '../models/index.js';
 
 export class ReminderController {
   // Send a reminder
@@ -19,7 +19,7 @@ export class ReminderController {
       const reminder = await Reminder.create({
         id: Date.now(),
         senderId: req.user.userId,
-        receiverId,
+        receiverId: parseInt(receiverId),
         category,
         message: message || null,
         isRead: false,

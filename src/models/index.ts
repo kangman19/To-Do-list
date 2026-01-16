@@ -33,12 +33,10 @@ Share.belongsTo(User, { foreignKey: 'ownerId', as: 'owner' });
 Share.belongsTo(User, { foreignKey: 'sharedWithUserId', as: 'sharedWith' });
 
 // Reminder associations
-User.hasMany(Reminder, { foreignKey: 'remindedUserId', as: 'receivedReminders' });
-User.hasMany(Reminder, { foreignKey: 'remindedByUserId', as: 'sentReminders' });
-Task.hasMany(Reminder, { foreignKey: 'taskId', as: 'reminders' });
+User.hasMany(Reminder, { foreignKey: 'senderId', as: 'sentReminders' });
+User.hasMany(Reminder, { foreignKey: 'receiverId', as: 'receivedReminders' });
 
-Reminder.belongsTo(User, { foreignKey: 'remindedUserId', as: 'remindedUser' });
-Reminder.belongsTo(User, { foreignKey: 'remindedByUserId', as: 'remindedByUser' });
-Reminder.belongsTo(Task, { foreignKey: 'taskId', as: 'task' });
+Reminder.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
+Reminder.belongsTo(User, { foreignKey: 'receiverId', as: 'receiver' });
 
 export { sequelize, User, Task, Share, Reminder };

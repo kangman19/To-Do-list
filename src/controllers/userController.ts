@@ -7,10 +7,6 @@ export class UserController {
   // Get current user info
   getCurrentUser = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
       res.json({
         userId: req.user.userId,
         username: req.user.username
@@ -24,10 +20,6 @@ export class UserController {
   // Get all users (for sharing)
   getAllUsers = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
       const users = await User.findAll({
         where: {
           id: { [Op.ne]: req.user.userId }

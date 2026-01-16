@@ -22,14 +22,30 @@
   <div id="taskForm" style="display:none;">
     <h1>To-Do List</h1>
 
-    <form id="addTaskForm">
-      <input id="taskInput" placeholder="Enter task" required>
+    <form id="addTaskForm" enctype="multipart/form-data">
+      <input id="taskInput" placeholder="Enter task title" required>
       
       <select id="categorySelect">
         <option value="">Select or enter category</option>
       </select>
 
       <input id="newCategoryInput" placeholder="New category (or existing)" style="display:none;">
+      
+      <select id="taskTypeSelect">
+        <option value="list">List Item</option>
+        <option value="text">Text Note</option>
+        <option value="image">Image</option>
+      </select>
+      
+      <!-- Text input (hidden by default) -->
+      <div id="textAreaContainer" style="display:none; width: 100%; margin-top: 10px;">
+        <textarea id="textArea" placeholder="Enter detailed text here..." rows="4" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d5db;"></textarea>
+      </div>
+      
+      <!-- Image input (hidden by default) -->
+      <div id="imageInputContainer" style="display:none; margin-top: 10px;">
+        <input type="file" id="imageInput" accept="image/*" style="padding: 8px;">
+      </div>
       
       <button type="submit">Add Task</button>
     </form>
@@ -62,11 +78,12 @@
         <option value="">Select a user</option>
       </select>
       <br><br>
-      <textarea id="reminderMessage" placeholder="Enter your reminder message here"></textarea>
+      <textarea id="reminderMessage" placeholder="Enter your reminder message here" style="width: 100%; padding: 10px; margin-top: 10px;"></textarea>
       <br><br>
       <button onclick="confirmSendReminder()">Send Reminder</button>
       <button onclick="closeReminderModal()">Cancel</button>
     </div>
+  </div>
 
   <script type="module" src="/js/main.js"></script>
 

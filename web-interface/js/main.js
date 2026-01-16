@@ -1,3 +1,4 @@
+// web-interface/js/main.js
 import { checkUserLogin, displayLoggedInUser, displayNotLoggedIn, showTaskForm } from './authService.js';
 import { loadTasks, createTask, toggleTask, deleteTask } from './taskService.js';
 import { loadUsers, shareFolder } from './shareService.js';
@@ -126,11 +127,32 @@ document.getElementById('categorySelect').addEventListener('change', (e) => {
   }
 });
 
+// Handle task type selection
+const taskTypeSelect = document.getElementById('taskTypeSelect');
+if (taskTypeSelect) {
+  taskTypeSelect.addEventListener('change', (e) => {
+    const textAreaContainer = document.getElementById('textAreaContainer');
+    const imageInputContainer = document.getElementById('imageInputContainer');
+    
+    // Hide all type-specific inputs
+    textAreaContainer.style.display = 'none';
+    imageInputContainer.style.display = 'none';
+    
+    // Show relevant input based on type
+    if (e.target.value === 'text') {
+      textAreaContainer.style.display = 'block';
+    } else if (e.target.value === 'image') {
+      imageInputContainer.style.display = 'block';
+    }
+  });
+}
+
 document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
   const task = document.getElementById('taskInput').value;
   const select = document.getElementById('categorySelect');
+  const taskType = taskTypeSelect ? taskTypeSelect.value : 'list';
   let category = select.value;
   
   if (category === '__custom__') {
@@ -144,15 +166,42 @@ document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
     return;
   }
 
+  // Get type-specific data
+  let file = null;
+  let textContent = null;
+  
+  if (taskType === 'image') {
+    const imageInput = document.getElementById('imageInput');
+    if (imageInput && imageInput.files && imageInput.files[0]) {
+      file = imageInput.files[0];
+    } else {
+      alert('Please select an image file');
+      return;
+    }
+  } else if (taskType === 'text') {
+    const textArea = document.getElementById('textArea');
+    if (textArea) {
+      textContent = textArea.value.trim();
+      if (!textContent) {
+        alert('Please enter text content');
+        return;
+      }
+    }
+  }
+
   const ownerId = categoryOwners[category];
-  const result = await createTask(task, category, ownerId);
+  const result = await createTask(task, category, ownerId, taskType, file, textContent);
   
   const messageEl = document.getElementById('taskMessage');
   
   if (result.success) {
     document.getElementById('taskInput').value = '';
     document.getElementById('newCategoryInput').value = '';
+    if (document.getElementById('textArea')) document.getElementById('textArea').value = '';
+    if (document.getElementById('imageInput')) document.getElementById('imageInput').value = '';
     select.value = '';
+    if (taskTypeSelect) taskTypeSelect.value = 'list';
+    messageEl.textContent = '';
     await loadAndDisplayTasks();
   } else {
     messageEl.textContent = result.message;

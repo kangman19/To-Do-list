@@ -1,27 +1,38 @@
-import { socket } from './socket.js';
+let socket = null;
 
-export function initializeSocket(onTasksUpdated) {
+export function initializeSocket(onTaskUpdate, onReminderReceived) {
+  socket = io();
+  const token = localStorage.getItem('token');
+  
+  socket.emit('authenticate', token);
+  
   socket.on('taskCreated', (data) => {
     console.log('Task created:', data.task);
-    onTasksUpdated();
+    onTaskUpdate();
   });
 
   socket.on('taskToggled', (data) => {
     console.log('Task toggled:', data.task);
-    onTasksUpdated();
+    onTaskUpdate();
   });
 
   socket.on('taskDeleted', (data) => {
     console.log('Task deleted:', data.taskId);
-    onTasksUpdated();
+    onTaskUpdate();
   });
 
-  socket.on('taskReminder', (data) => {
-    console.log('Task reminder:', data);
+  socket.on('reminderReceived', (data) => {
+    console.log('Reminder received:', data);
+    if (onReminderReceived) {
+      onReminderReceived();
+    }
   });
 
-  socket.on('taskShared', (data) => {
-    console.log('Task shared:', data);
-    onTasksUpdated();
+  socket.on('authenticated', (data) => {
+    console.log('Socket authenticated:', data);
   });
+}
+
+export function getSocket() {
+  return socket;
 }

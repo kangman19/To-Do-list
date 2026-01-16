@@ -1,6 +1,6 @@
 import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions } from 'passport-jwt';
-import { JwtPayload } from '../types/index.js';
+import { JwtPayload, AuthUser } from '../types/index.js';
 import { JWT_SECRET } from '../utils/constants.js';
 
 const jwtOptions: StrategyOptions = {
@@ -10,7 +10,12 @@ const jwtOptions: StrategyOptions = {
 
 passport.use(
   new JwtStrategy(jwtOptions, (payload: JwtPayload, done) => {
-    return done(null, payload);
+    // Transform JWT payload into AuthUser
+    const user: AuthUser = {
+      userId: payload.userId,
+      username: payload.username
+    };
+    return done(null, user);
   })
 );
 

@@ -1,3 +1,5 @@
+// web-interface/js/taskService.js
+
 export async function loadTasks() {
   try {
     const token = localStorage.getItem('token');
@@ -17,16 +19,30 @@ export async function loadTasks() {
   }
 }
 
-export async function createTask(task, category, ownerId) {
+export async function createTask(task, category, ownerId, taskType, file, textContent) {
   try {
     const token = localStorage.getItem('token');
+    
+    // Use FormData for file uploads
+    const formData = new FormData();
+    formData.append('task', task);
+    formData.append('category', category || 'Uncategorized');
+    if (ownerId) formData.append('ownerId', ownerId);
+    formData.append('taskType', taskType || 'list');
+    
+    if (taskType === 'image' && file) {
+      formData.append('image', file);
+    } else if (taskType === 'text' && textContent) {
+      formData.append('textContent', textContent);
+    }
+
     const response = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
+        // Don't set Content-Type - browser will set it with boundary for FormData
       },
-      body: JSON.stringify({ task, category, ownerId })
+      body: formData
     });
 
     if (response.ok) {

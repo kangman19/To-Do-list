@@ -1,7 +1,7 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
 import { TaskAttributes } from '../types';
 
-type TaskCreationAttributes = Optional<TaskAttributes, 'id' | 'completed' | 'completedAt' | 'completedById'>;
+type TaskCreationAttributes = Optional<TaskAttributes, 'id' | 'completed' | 'completedAt' | 'completedById' | 'taskType' | 'imageUrl' | 'textContent'>;
 
 class Task extends Model<TaskAttributes, TaskCreationAttributes> implements TaskAttributes {
   public id!: number;
@@ -12,8 +12,9 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
   public completed!: boolean;
   public completedAt!: Date | null;
   public completedById!: number | null;
-  public taskType?: string;
-  public imageUrl?: string | null;
+  public taskType!: string; // 'list' | 'text' | 'image'
+  public imageUrl!: string | null;
+  public textContent!: string | null;
 }
 
 export default (sequelize: Sequelize) => {
@@ -54,8 +55,19 @@ export default (sequelize: Sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: true
       },
-
-
+      taskType: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: 'list'
+      },
+      imageUrl: {
+        type: DataTypes.STRING(500),
+        allowNull: true
+      },
+      textContent: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      }
     },
     {
       sequelize,
@@ -66,3 +78,5 @@ export default (sequelize: Sequelize) => {
 
   return Task;
 };
+
+export { Task };

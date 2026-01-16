@@ -12,20 +12,10 @@ export class TaskController {
     this.socketService = socketService;
   }
 
-  /* =========================
-     GET ALL TASKS
-  ========================= */
-
+  // Get all tasks
   getTasks = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      const tasksByCategory = await this.taskService.getUserTasks(
-        req.user.userId
-      );
-
+      const tasksByCategory = await this.taskService.getUserTasks(req.user.userId);
       res.json(tasksByCategory);
     } catch (err) {
       console.error('Error fetching tasks:', err);
@@ -33,27 +23,17 @@ export class TaskController {
     }
   };
 
-  /* =========================
-     CREATE TASK (EXTENDED)
-  ========================= */
-
-  createTask = async (
-    req: AuthRequest<{}, {}, CreateTaskBody>,
-    res: Response
-  ) => {
+  // Create task
+  createTask = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
       const { task, category, ownerId, taskType } = req.body;
-      const file = (req as any).file; // Multer injects this
+      const file = (req as any).file; // Multer adds file to request
 
       if (!task) {
         return res.status(400).json({ message: 'Task is required' });
       }
 
-      let imageUrl: string | undefined;
+      let imageUrl = null;
       if (file) {
         imageUrl = `/uploads/${file.filename}`;
       }
@@ -68,15 +48,11 @@ export class TaskController {
       );
 
       // Emit socket event
-      this.socketService.emitTaskCreated(
-        result.userId,
-        result.category,
-        result.task
-      );
+      this.socketService.emitTaskCreated(result.userId, result.category, result.task);
 
-      res.status(201).json({
-        message: 'Task added successfully',
-        task: result.task
+      res.status(201).json({ 
+        message: 'Task added successfully', 
+        task: result.task 
       });
     } catch (err) {
       console.error('Error creating task:', err);
@@ -84,40 +60,23 @@ export class TaskController {
     }
   };
 
-  /* =========================
-     TOGGLE TASK
-  ========================= */
-
-  toggleTask = async (
-    req: AuthRequest<{ taskId: string }>,
-    res: Response
-  ) => {
+  // Toggle task
+  toggleTask = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
       const taskId = parseInt(req.params.taskId);
 
       if (isNaN(taskId)) {
         return res.status(400).json({ message: 'Invalid task ID' });
       }
 
-      const result = await this.taskService.toggleTask(
-        taskId,
-        req.user.userId
-      );
+      const result = await this.taskService.toggleTask(taskId, req.user.userId);
 
       // Emit socket event
-      this.socketService.emitTaskToggled(
-        result.userId,
-        result.category,
-        result.task
-      );
+      this.socketService.emitTaskToggled(result.userId, result.category, result.task);
 
-      res.json({
-        message: 'Task toggled successfully',
-        task: result.task
+      res.json({ 
+        message: 'Task toggled successfully', 
+        task: result.task 
       });
     } catch (err: any) {
       console.error('Error toggling task:', err);
@@ -128,14 +87,8 @@ export class TaskController {
     }
   };
 
-  /* =========================
-     DELETE TASK
-  ========================= */
-
-  deleteTask = async (
-    req: AuthRequest<{ taskId: string }>,
-    res: Response
-  ) => {
+  // Delete task
+  deleteTask = async (req: AuthRequest, res: Response) => {
     try {
       const taskId = parseInt(req.params.taskId);
 
@@ -146,11 +99,7 @@ export class TaskController {
       const result = await this.taskService.deleteTask(taskId);
 
       // Emit socket event
-      this.socketService.emitTaskDeleted(
-        result.userId,
-        result.category,
-        taskId
-      );
+      this.socketService.emitTaskDeleted(result.userId, result.category, taskId);
 
       res.json({ message: 'Task deleted successfully' });
     } catch (err: any) {

@@ -1,26 +1,12 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import http from 'http';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../utils/constants.js';
-import { JwtPayload } from '../types/index.js';
+import { JwtPayload, TaskWithUser } from '../types/index.js';
 import { Task, Share } from '../models/index.js';
 
 interface AuthenticatedSocket extends Socket {
   userId?: number;
   username?: string;
-}
-
-export interface TaskWithUser {
-  id: number;
-  userId: number;
-  task: string;
-  category: string;
-  createdAt: Date;
-  completed: boolean;
-  completedAt: Date | null;
-  completedById: number | null;
-  username: string;
-  completedBy: string | null;
 }
 
 export class SocketService {
@@ -41,6 +27,7 @@ export class SocketService {
           socket.userId = decoded.userId;
           socket.username = decoded.username;
 
+          // Join rooms for owned categories
           await this.joinUserRooms(socket);
 
           socket.emit('authenticated', { success: true });
@@ -59,59 +46,50 @@ export class SocketService {
   private async joinUserRooms(socket: AuthenticatedSocket) {
     if (!socket.userId) return;
 
+    // Join user-specific room for reminders
+    socket.join(`user_${socket.userId}`);
+
+    // Join rooms for owned categories
     const userTasks = await Task.findAll({
       where: { userId: socket.userId },
       attributes: ['category'],
       group: ['category']
     });
-
-    const categories = [...new Set(userTasks.map((t: any) => t.category))];
-
-    categories.forEach(category => {
-      socket.join(`category_${socket.userId}_${category}`);
+    const userCategories = [...new Set(userTasks.map((t: any) => t.category))];
+    userCategories.forEach(cat => {
+      socket.join(`category_${socket.userId}_${cat}`);
     });
 
-    const shared = await Share.findAll({
+    // Join rooms for shared categories
+    const sharedCategories = await Share.findAll({
       where: { sharedWithUserId: socket.userId }
     });
-
-    shared.forEach((share: any) => {
+    sharedCategories.forEach((share: any) => {
       socket.join(`category_${share.ownerId}_${share.category}`);
     });
   }
 
+  // Emit task created event
   public emitTaskCreated(userId: number, category: string, task: TaskWithUser) {
-    this.io.to(`category_${userId}_${category}`).emit('taskCreated', {
-      task,
-      category
-    });
+    const roomName = `category_${userId}_${category}`;
+    this.io.to(roomName).emit('taskCreated', { task, category });
   }
 
+  // Emit task toggled event
   public emitTaskToggled(userId: number, category: string, task: TaskWithUser) {
-    this.io.to(`category_${userId}_${category}`).emit('taskToggled', {
-      task,
-      category
-    });
+    const roomName = `category_${userId}_${category}`;
+    this.io.to(roomName).emit('taskToggled', { task, category });
   }
 
+  // Emit task deleted event
   public emitTaskDeleted(userId: number, category: string, taskId: number) {
-    this.io.to(`category_${userId}_${category}`).emit('taskDeleted', {
-      taskId,
-      category
-    });
+    const roomName = `category_${userId}_${category}`;
+    this.io.to(roomName).emit('taskDeleted', { taskId, category });
+  }
+
+  // Emit reminder sent event
+  public emitReminderSent(receiverId: number) {
+    const roomName = `user_${receiverId}`;
+    this.io.to(roomName).emit('reminderReceived', { timestamp: new Date() });
   }
 }
-
-export const setupSocketIO = (app: any) => {
-  const server = http.createServer(app);
-  const io = new SocketIOServer(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
-  });
-
-  const socketService = new SocketService(io);
-
-  // Attach socketService to app for controllers to use
-  (app as any).socketService = socketService;
-
-  return server;
-};
