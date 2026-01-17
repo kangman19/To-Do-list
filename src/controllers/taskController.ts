@@ -15,6 +15,10 @@ export class TaskController {
   // Get all tasks
   getTasks = async (req: AuthRequest, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       const tasksByCategory = await this.taskService.getUserTasks(req.user.userId);
       res.json(tasksByCategory);
     } catch (err) {
@@ -24,16 +28,21 @@ export class TaskController {
   };
 
   // Create task
-  createTask = async (req: AuthRequest, res: Response) => {
+  createTask = async (req: AuthRequest<any, any, CreateTaskBody>, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       const { task, category, ownerId, taskType } = req.body;
       const file = (req as any).file; // Multer adds file to request
+      const textContent = req.body.textContent;
 
       if (!task) {
         return res.status(400).json({ message: 'Task is required' });
       }
 
-      let imageUrl = null;
+      let imageUrl: string | undefined = undefined;
       if (file) {
         imageUrl = `/uploads/${file.filename}`;
       }
@@ -61,8 +70,12 @@ export class TaskController {
   };
 
   // Toggle task
-  toggleTask = async (req: AuthRequest, res: Response) => {
+  toggleTask = async (req: AuthRequest<{ taskId: string }>, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       const taskId = parseInt(req.params.taskId);
 
       if (isNaN(taskId)) {
@@ -88,7 +101,7 @@ export class TaskController {
   };
 
   // Delete task
-  deleteTask = async (req: AuthRequest, res: Response) => {
+  deleteTask = async (req: AuthRequest<{ taskId: string }>, res: Response) => {
     try {
       const taskId = parseInt(req.params.taskId);
 

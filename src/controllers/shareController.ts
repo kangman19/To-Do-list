@@ -6,6 +6,10 @@ export class ShareController {
   // Create a share
   createShare = async (req: AuthRequest, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
       const { category, sharedWithUserId } = req.body;
 
       if (!category || !sharedWithUserId) {
@@ -43,8 +47,31 @@ export class ShareController {
     }
   };
 
-}
-  /* getShares (get all shares for a user)
-   deleteShare (unshare a category) 
+  // Delete a share 
+  deleteShare = async (req: AuthRequest<{ shareId: string }>, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
-   can be implemented later, fix basic issues first */
+      const shareId = parseInt(req.params.shareId);
+      
+      const share = await Share.findOne({
+        where: {
+          id: shareId,
+          ownerId: req.user.userId
+        }
+      });
+
+      if (!share) {
+        return res.status(404).json({ message: 'Share not found' });
+      }
+
+      await share.destroy();
+      res.json({ message: 'Share deleted successfully' });
+    } catch (err) {
+      console.error('Error deleting share:', err);
+      res.status(500).json({ message: 'Failed to delete share' });
+    }
+  };
+}

@@ -15,7 +15,7 @@ passport.use(
       userId: payload.userId,
       username: payload.username
     };
-    return done(null, user);
+    return done(null, payload);
   })
 );
 

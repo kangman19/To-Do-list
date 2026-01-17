@@ -1,5 +1,3 @@
-// web-interface/js/uiHelpers.js
-
 export function displayTasks(tasksByCategory, categoryOwners) {
   const allCategories = new Set();
   
@@ -15,86 +13,143 @@ export function displayTasks(tasksByCategory, categoryOwners) {
   const container = document.getElementById('categoriesContainer');
   container.innerHTML = '';
 
+  // Color palette for cards
+  const colors = ['blue'];
+  let colorIndex = 0;
+
   Object.keys(tasksByCategory).sort().forEach(category => {
     const catData = tasksByCategory[category];
-    const categoryDiv = document.createElement('div');
-    categoryDiv.style.marginBottom = '30px';
     
+    // Create card
+    const categoryCard = document.createElement('div');
+    categoryCard.className = 'category-card';
+    categoryCard.setAttribute('data-color', colors[colorIndex % colors.length]);
+    colorIndex++;
+    
+    // Header
     const headerDiv = document.createElement('div');
     headerDiv.className = 'category-header';
     
-    const titleSpan = document.createElement('span');
-    titleSpan.className = 'category-title';
-    titleSpan.innerHTML = `<h2>${category}</h2>`;
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'category-title';
+    titleDiv.innerHTML = `<h2>${category}</h2>`;
     
     if (catData.shared) {
-      titleSpan.innerHTML += `<span class="shared-badge">Shared with you by ${catData.sharedBy}</span>`;
+      titleDiv.innerHTML += `<span class="shared-badge">Shared by ${catData.sharedBy}</span>`;
     }
     
-    headerDiv.appendChild(titleSpan);
+    headerDiv.appendChild(titleDiv);
     
+    // Card Actions (share & remind buttons)
     if (!catData.shared) {
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'category-actions';
+      
       const shareBtn = document.createElement('button');
-      shareBtn.className = 'share-btn';
       shareBtn.textContent = 'Share';
+      shareBtn.title = 'Share';
       shareBtn.onclick = () => window.openShareModal(category);
-      headerDiv.appendChild(shareBtn);
+      
+      const remindBtn = document.createElement('button');
+      remindBtn.textContent = 'Send reminder';
+      remindBtn.title = 'Remind';
+      remindBtn.onclick = () => window.openReminderModal(category);
+      
+      actionsDiv.appendChild(shareBtn);
+      actionsDiv.appendChild(remindBtn);
+      headerDiv.appendChild(actionsDiv);
     }
     
-    categoryDiv.appendChild(headerDiv);
+    categoryCard.appendChild(headerDiv);
     
+    // Task list
     const taskList = document.createElement('ul');
-    taskList.id = `list-${category}`;
     
-    catData.tasks.forEach(task => {
-      const li = document.createElement('li');
-      const strikethrough = task.completed ? 'style="text-decoration: line-through; color: #999;"' : '';
+    if (catData.tasks.length === 0) {
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-category';
+      emptyState.textContent = 'No tasks yet';
+      categoryCard.appendChild(emptyState);
+    } else {
+      catData.tasks.forEach(task => {
+        const li = document.createElement('li');
+        
+        // Checkbox
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.completed;
+        checkbox.onchange = () => window.toggleTaskHandler(task.id);
+        li.appendChild(checkbox);
+        
+        // Task content
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'task-content';
+        
+        // Task title
+        const titleSpan = document.createElement('div');
+        titleSpan.className = task.completed ? 'task-title completed' : 'task-title';
+        titleSpan.textContent = task.task;
+        contentDiv.appendChild(titleSpan);
+        
+        // Image task
+        if (task.taskType === 'image' && task.imageUrl) {
+          const imgContainer = document.createElement('div');
+          imgContainer.className = 'task-image-container';
+          
+          const img = document.createElement('img');
+          img.src = task.imageUrl;
+          img.alt = task.task;
+          img.className = 'task-image';
+          img.onclick = () => window.open(task.imageUrl, '_blank');
+          
+          imgContainer.appendChild(img);
+          contentDiv.appendChild(imgContainer);
+        }
+        
+        // Text task
+        if (task.taskType === 'text' && task.textContent) {
+          const textContainer = document.createElement('div');
+          textContainer.className = 'task-text-container';
+          
+          const textContent = document.createElement('p');
+          textContent.className = 'task-text-content';
+          textContent.textContent = task.textContent;
+          
+          textContainer.appendChild(textContent);
+          contentDiv.appendChild(textContainer);
+        }
+        
+        // Task metadata
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'task-meta';
+        metaDiv.innerHTML = `Created by ${task.username}`;
+        
+        if (task.completed && task.completedBy) {
+          metaDiv.innerHTML += ` • Done by ${task.completedBy}`;
+        }
+        
+        contentDiv.appendChild(metaDiv);
+        li.appendChild(contentDiv);
+        
+        // Actions
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'task-actions';
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.title = 'Delete';
+        deleteBtn.onclick = () => window.deleteTaskHandler(task.id);
+        
+        actionsDiv.appendChild(deleteBtn);
+        li.appendChild(actionsDiv);
+        
+        taskList.appendChild(li);
+      });
       
-      let taskContentHTML = '';
-      
-      // Render based on task type
-      if (task.taskType === 'image' && task.imageUrl) {
-        taskContentHTML = `
-          <div class="task-image-container">
-            <img src="${task.imageUrl}" alt="${task.task}" class="task-image">
-            <p ${strikethrough}><strong>${task.task}</strong></p>
-          </div>
-        `;
-      } else if (task.taskType === 'text' && task.textContent) {
-        taskContentHTML = `
-          <div class="task-text-container">
-            <p ${strikethrough}><strong>${task.task}</strong></p>
-            <p class="task-text-content">${task.textContent}</p>
-          </div>
-        `;
-      } else {
-        // Default list item
-        taskContentHTML = `<span ${strikethrough}>"${task.task}"</span>`;
-      }
-      
-      li.innerHTML = `
-        <input type="checkbox" ${task.completed ? 'checked' : ''} 
-               onchange="window.toggleTaskHandler(${task.id})" 
-               style="margin-right: 10px; cursor: pointer;">
-        ${taskContentHTML}
-        <span style="font-size: 0.85em; color: #666; margin-left: 10px;">
-          Created by: ${task.username} ${task.createdAt}
-        </span> 
-        <button onclick="window.deleteTaskHandler(${task.id})" 
-                style="margin-left: 10px; cursor: pointer; color: red;">
-          Delete
-        </button>
-        ${task.completed && task.completedBy ? `
-          <br><span style="font-size: 0.85em; color: #666; margin-left: 40px;">
-            Marked done by: ${task.completedBy} at ${new Date(task.completedAt).toLocaleString()}
-          </span>
-        ` : ''}
-      `;
-      taskList.appendChild(li);
-    });
+      categoryCard.appendChild(taskList);
+    }
     
-    categoryDiv.appendChild(taskList);
-    container.appendChild(categoryDiv);
+    container.appendChild(categoryCard);
   });
 }
 

@@ -124,6 +124,7 @@ export interface CreateTaskBody {
   category: string;
   ownerId?: number;
   taskType?: string;
+  textContent?: string;
 }
 
 export interface CreateShareBody {
