@@ -1,9 +1,22 @@
 import { Sequelize, DataTypes, Model, Optional } from 'sequelize';
 import { TaskAttributes } from '../types';
 
-type TaskCreationAttributes = Optional<TaskAttributes, 'id' | 'completed' | 'completedAt' | 'completedById' | 'taskType' | 'imageUrl' | 'textContent'>;
+type TaskCreationAttributes = Optional<
+  TaskAttributes,
+  | 'id'
+  | 'completed'
+  | 'completedAt'
+  | 'completedById'
+  | 'taskType'
+  | 'imageUrl'
+  | 'textContent'
+  | 'dueDate'
+>;
 
-class Task extends Model<TaskAttributes, TaskCreationAttributes> implements TaskAttributes {
+class Task
+  extends Model<TaskAttributes, TaskCreationAttributes>
+  implements TaskAttributes
+{
   public id!: number;
   public userId!: number;
   public task!: string;
@@ -12,9 +25,12 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
   public completed!: boolean;
   public completedAt!: Date | null;
   public completedById!: number | null;
-  public taskType!: string; // 'list' | 'text' | 'image'
-  public imageUrl!: string | null;
-  public textContent!: string | null;
+
+  // Optional at TS level, defaulted at DB level
+  public taskType?: string; // 'list' | 'text' | 'image'
+  public imageUrl?: string | null;
+  public textContent?: string | null;
+  public dueDate?: Date | null;
 }
 
 export default (sequelize: Sequelize) => {
@@ -22,7 +38,8 @@ export default (sequelize: Sequelize) => {
     {
       id: {
         type: DataTypes.BIGINT,
-        primaryKey: true
+        primaryKey: true,
+        autoIncrement: true
       },
       userId: {
         type: DataTypes.INTEGER,
@@ -67,8 +84,13 @@ export default (sequelize: Sequelize) => {
       textContent: {
         type: DataTypes.TEXT,
         allowNull: true
+      },
+      dueDate: {
+        type: DataTypes.DATE,
+        allowNull: true
       }
     },
+    
     {
       sequelize,
       tableName: 'tasks',

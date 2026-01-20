@@ -1,30 +1,44 @@
-import { Task, User, Share } from '../models/index.js';
+import { User, Task, Share } from '../models/index.js';
 import { TasksByCategory, TaskWithUser } from '../types/index.js';
 
 export class TaskService {
-
+  // Get all tasks for a user (owned + shared)
   async getUserTasks(userId: number): Promise<TasksByCategory> {
     // Get user's own tasks
     const userTasks = await Task.findAll({
       where: { userId },
       include: [
-        { model: User, as: 'user', attributes: ['username'] },
-        { model: User, as: 'completedByUser', attributes: ['username'] }
+        {
+          model: User,
+          as: 'user',
+          attributes: ['username']
+        },
+        {
+          model: User,
+          as: 'completedByUser',
+          attributes: ['username']
+        }
       ],
       order: [['createdAt', 'DESC']]
     });
 
+    // Get shared categories
+    const sharedCategories = await Share.findAll({
+      where: { sharedWithUserId: userId },
+      include: [{
+        model: User,
+        as: 'owner',
+        attributes: ['username']
+      }]
+    });
+
+    // Group tasks by category
     const tasksByCategory: TasksByCategory = {};
 
     userTasks.forEach((task: any) => {
       const category = task.category || 'Uncategorized';
-
       if (!tasksByCategory[category]) {
-        tasksByCategory[category] = {
-          tasks: [],
-          shared: false,
-          sharedBy: null
-        };
+        tasksByCategory[category] = { tasks: [], shared: false, sharedBy: null };
       }
 
       const taskData: any = task.toJSON();
@@ -33,20 +47,13 @@ export class TaskService {
         username: taskData.user?.username || 'Unknown',
         completedBy: taskData.completedByUser?.username || null
       };
-
       delete (formattedTask as any).user;
       delete (formattedTask as any).completedByUser;
 
       tasksByCategory[category].tasks.push(formattedTask);
     });
 
-    // Get shared categories
-    const sharedCategories = await Share.findAll({
-      where: { sharedWithUserId: userId },
-      include: [{ model: User, as: 'owner', attributes: ['username'] }]
-    });
-
-    // Attach shared tasks
+    // Add shared category tasks
     for (const share of sharedCategories) {
       const sharedTasks = await Task.findAll({
         where: {
@@ -54,23 +61,29 @@ export class TaskService {
           category: share.category
         },
         include: [
-          { model: User, as: 'user', attributes: ['username'] },
-          { model: User, as: 'completedByUser', attributes: ['username'] }
+          {
+            model: User,
+            as: 'user',
+            attributes: ['username']
+          },
+          {
+            model: User,
+            as: 'completedByUser',
+            attributes: ['username']
+          }
         ],
         order: [['createdAt', 'DESC']]
       });
 
-      const formattedSharedTasks: TaskWithUser[] = sharedTasks.map((task: any) => {
+      const formattedSharedTasks = sharedTasks.map((task: any) => {
         const taskData: any = task.toJSON();
         const formattedTask: TaskWithUser = {
           ...taskData,
           username: taskData.user?.username || 'Unknown',
           completedBy: taskData.completedByUser?.username || null
         };
-
         delete (formattedTask as any).user;
         delete (formattedTask as any).completedByUser;
-
         return formattedTask;
       });
 
@@ -84,49 +97,82 @@ export class TaskService {
     return tasksByCategory;
   }
 
+  // Create a new task
   async createTask(
     userId: number,
     task: string,
-    category?: string,
+    category: string,
     ownerId?: number,
     taskType?: string,
-    imageUrl?: string
+    imageUrl?: string,
+    textContent?: string,
+    dueDate?: string | null
   ): Promise<any> {
     const taskUserId = ownerId || userId;
 
-    const newTask = await Task.create({
-      id: Date.now(),
-      userId: taskUserId,
+    console.log('TaskService.createTask - Preparing to create task with:', {
+      taskUserId,
       task,
       category: category || 'Uncategorized',
-      createdAt: new Date(),
-      completed: false,
-      completedAt: null,
-      completedById: null,
       taskType: taskType || 'list',
-      imageUrl: imageUrl || null
+      imageUrl: imageUrl || null,
+      textContent: textContent || null,
+      dueDate: dueDate ? new Date(dueDate) : null
     });
 
-    const taskWithUser = await Task.findByPk(newTask.id, {
-      include: [{ model: User, as: 'user', attributes: ['username'] }]
-    });
+    try {
+      // Create task without manually setting ID
+      const newTask = await Task.create({
+        userId: taskUserId,
+        task,
+        category: category || 'Uncategorized',
+        createdAt: new Date(),
+        completed: false,
+        completedAt: null,
+        completedById: null,
+        taskType: taskType || 'list',
+        imageUrl: imageUrl || null,
+        textContent: textContent || null,
+        dueDate: dueDate ? new Date(dueDate) : null
+      });
 
-    if (!taskWithUser) {
-      throw new Error('Task not found after creation');
+      console.log('TaskService.createTask - Task created with ID:', newTask.id);
+
+      const taskWithUser = await Task.findByPk(newTask.id, {
+        include: [{
+          model: User,
+          as: 'user',
+          attributes: ['username']
+        }]
+      });
+
+      if (!taskWithUser) {
+        throw new Error('Task not found after creation');
+      }
+
+      const taskData: any = taskWithUser.toJSON();
+      taskData.username = taskData.user?.username || 'Unknown';
+      delete taskData.user;
+
+      console.log('TaskService.createTask - Returning formatted task:', taskData);
+
+      return {
+        task: taskData,
+        userId: taskUserId,
+        category: newTask.category
+      };
+    } catch (error: any) {
+      console.error('TaskService.createTask - Error details:', {
+        message: error.message,
+        name: error.name,
+        sql: error.sql,
+        original: error.original
+      });
+      throw error;
     }
-
-    const taskData: any = taskWithUser.toJSON();
-    taskData.username = taskData.user?.username || 'Unknown';
-    taskData.completedBy = null;
-    delete taskData.user;
-
-    return {
-      task: taskData,
-      userId: taskUserId,
-      category: newTask.category
-    };
   }
 
+  // Toggle task completion
   async toggleTask(taskId: number, userId: number): Promise<any> {
     const task = await Task.findByPk(taskId);
 
@@ -148,8 +194,16 @@ export class TaskService {
 
     const taskWithUser = await Task.findByPk(taskId, {
       include: [
-        { model: User, as: 'user', attributes: ['username'] },
-        { model: User, as: 'completedByUser', attributes: ['username'] }
+        {
+          model: User,
+          as: 'user',
+          attributes: ['username']
+        },
+        {
+          model: User,
+          as: 'completedByUser',
+          attributes: ['username']
+        }
       ]
     });
 
@@ -163,7 +217,6 @@ export class TaskService {
       username: taskData.user?.username || 'Unknown',
       completedBy: taskData.completedByUser?.username || null
     };
-
     delete (formattedTask as any).user;
     delete (formattedTask as any).completedByUser;
 
@@ -174,9 +227,8 @@ export class TaskService {
     };
   }
 
-  async deleteTask(
-    taskId: number
-  ): Promise<{ userId: number; category: string }> {
+  // Delete a task
+  async deleteTask(taskId: number): Promise<{ userId: number; category: string }> {
     const task = await Task.findByPk(taskId);
 
     if (!task) {
@@ -191,5 +243,15 @@ export class TaskService {
     await task.destroy();
 
     return deletedTaskData;
+  }
+
+  //Delete folder/category
+  async deleteFolder(userId: number, category: string): Promise<void> {
+    await Task.destroy({
+      where: {
+        userId,
+        category
+      }
+    });
   }
 }

@@ -20,8 +20,14 @@ export const createTaskRouter = (socketService: SocketService) => {
   // POST /api/tasks/:taskId/toggle - Toggle task completion
   router.post('/:taskId/toggle', taskController.toggleTask);
 
-  // POST /api/tasks/:taskId/delete - Delete a task
+  //Delete folder/category
+  router.delete('/folder/:category/delete', requireAuth, taskController.deleteFolder);
+
+
+  //Delete a task
   router.post('/:taskId/delete', taskController.deleteTask);
+
+  
 
   return router;
 };

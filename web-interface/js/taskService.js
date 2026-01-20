@@ -17,22 +17,32 @@ export async function loadTasks() {
   }
 }
 
-export async function createTask(task, category, ownerId, taskType = 'list', textContent = null) {
+export async function createTask(task, category, ownerId, taskType, file, textContent, dueDate) {
   try {
     const token = localStorage.getItem('token');
+
+    const formData = new FormData();
+    formData.append('task', task);
+    formData.append('category', category || 'Uncategorized');
+    if (ownerId) formData.append('ownerId', ownerId);
+    formData.append('taskType', taskType || 'list');
+
+    if (taskType === 'image' && file) {
+      formData.append('image', file);
+    } else if (taskType === 'text' && textContent) {
+      formData.append('textContent', textContent);
+    }
+
+    if (dueDate) {
+      formData.append('dueDate', dueDate);
+    }
+
     const response = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ 
-        task, 
-        category, 
-        ownerId, 
-        taskType,
-        textContent 
-      })
+      body: formData
     });
 
     if (response.ok) {
@@ -46,6 +56,8 @@ export async function createTask(task, category, ownerId, taskType = 'list', tex
     return { success: false, message: 'Network error: ' + error.message };
   }
 }
+
+
 
 export async function toggleTask(taskId) {
   try {
@@ -61,6 +73,24 @@ export async function toggleTask(taskId) {
     return false;
   }
 }
+
+export async function deleteFolder(category) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/tasks/folder/${encodeURIComponent(category)}/delete`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Error deleting folder:', error);
+    return false;
+  }
+}
+
 
 export async function deleteTask(taskId) {
   try {

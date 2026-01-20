@@ -43,6 +43,15 @@ export class SocketService {
     });
   }
 
+//1
+public async joinCategoryRoom(userId: number, category: string) {
+  // Find all sockets for this user and make them join the new category room
+  const sockets = await this.io.in(`user_${userId}`).fetchSockets();
+  sockets.forEach(socket => {
+    socket.join(`category_${userId}_${category}`);
+  });
+}
+
   private async joinUserRooms(socket: AuthenticatedSocket) {
     if (!socket.userId) return;
 

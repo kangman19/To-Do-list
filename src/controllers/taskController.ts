@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AuthRequest, CreateTaskBody } from '../types/index.js';
+import { AuthRequest } from '../types/index.js';
 import { TaskService } from '../services/taskService.js';
 import { SocketService } from '../services/socketService.js';
 
@@ -15,10 +15,6 @@ export class TaskController {
   // Get all tasks
   getTasks = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
       const tasksByCategory = await this.taskService.getUserTasks(req.user.userId);
       res.json(tasksByCategory);
     } catch (err) {
@@ -28,15 +24,21 @@ export class TaskController {
   };
 
   // Create task
-  createTask = async (req: AuthRequest<any, any, CreateTaskBody>, res: Response) => {
+  createTask = async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
-      const { task, category, ownerId, taskType } = req.body;
+      const { task, category, ownerId, taskType, textContent, dueDate } = req.body;
       const file = (req as any).file; // Multer adds file to request
-      const textContent = req.body.textContent;
+
+      console.log('Creating task with data:', { 
+        task, 
+        category, 
+        ownerId, 
+        taskType, 
+        textContent, 
+        dueDate,
+        hasFile: !!file,
+        userId: req.user.userId
+      });
 
       if (!task) {
         return res.status(400).json({ message: 'Task is required' });
@@ -53,8 +55,15 @@ export class TaskController {
         category,
         ownerId,
         taskType,
-        imageUrl
+        imageUrl,
+        textContent,
+        dueDate
       );
+
+      console.log('Task created successfully:', result);
+      //2
+      await this.socketService.joinCategoryRoom(result.userId, result.category);
+
 
       // Emit socket event
       this.socketService.emitTaskCreated(result.userId, result.category, result.task);
@@ -63,19 +72,38 @@ export class TaskController {
         message: 'Task added successfully', 
         task: result.task 
       });
+    } catch (err: any) {
+      console.error('Error creating task - Full error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      if (err.original) {
+        console.error('Sequelize original error:', err.original);
+      }
+      res.status(500).json({ 
+        message: 'Failed to create task',
+        error: err.message // Send error message to frontend for debugging
+      });
+    }
+  };
+
+  // Delete folder
+  deleteFolder = async (req: AuthRequest<{ category: string }>, res: Response) => {
+    try {
+      const { category } = req.params;
+      const userId = req.user.userId;
+
+      await this.taskService.deleteFolder(userId, category);
+
+      return res.json({ success: true });
     } catch (err) {
-      console.error('Error creating task:', err);
-      res.status(500).json({ message: 'Failed to create task' });
+      console.error(err);
+      return res.status(500).json({ message: 'Error deleting folder' });
     }
   };
 
   // Toggle task
   toggleTask = async (req: AuthRequest<{ taskId: string }>, res: Response) => {
     try {
-      if (!req.user) {
-        return res.status(401).json({ message: 'Unauthorized' });
-      }
-
       const taskId = parseInt(req.params.taskId);
 
       if (isNaN(taskId)) {
@@ -109,7 +137,12 @@ export class TaskController {
         return res.status(400).json({ message: 'Invalid task ID' });
       }
 
-      const result = await this.taskService.deleteTask(taskId);
+      const { category } = await this.taskService.deleteTask(taskId);
+
+      const result = {
+        userId: req.user.userId,
+        category
+      };
 
       // Emit socket event
       this.socketService.emitTaskDeleted(result.userId, result.category, taskId);

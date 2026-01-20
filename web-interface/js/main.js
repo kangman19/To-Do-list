@@ -1,6 +1,5 @@
-// web-interface/js/main.js
 import { checkUserLogin, displayLoggedInUser, displayNotLoggedIn, showTaskForm } from './authService.js';
-import { loadTasks, createTask, toggleTask, deleteTask } from './taskService.js';
+import { loadTasks, createTask, toggleTask, deleteTask, deleteFolder } from './taskService.js';
 import { loadUsers, shareFolder } from './shareService.js';
 import { displayTasks, updateCategorySelect, openShareModal, closeShareModal } from './uiHelpers.js';
 import { initializeSocket } from './socketClient.js';
@@ -9,6 +8,7 @@ import { getUnreadReminders, sendReminder, markReminderAsRead } from './reminder
 // Global state
 let allUsers = [];
 let categoryOwners = {};
+let notificationsVisible = false;//1
 window.currentShareCategory = null;
 window.currentReminderCategory = null;
 
@@ -34,6 +34,21 @@ async function initApp() {
     displayNotLoggedIn();
   }
 }
+//2
+window.toggleNotifications = async () => {
+  if (notificationsVisible) {
+    // Close notifications
+    const notifications = document.getElementById('reminderNotifications');
+    if (notifications) {
+      notifications.remove();
+    }
+    notificationsVisible = false;
+  } else {
+    // Open/refresh notifications
+    await checkAndDisplayReminders();
+    notificationsVisible = true;
+  }
+};
 
 async function checkAndDisplayReminders() {
   const reminders = await getUnreadReminders();
@@ -188,9 +203,17 @@ document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
       }
     }
   }
+  const dueDateInput = document.getElementById('dueDateInput');
+  const dueDate = dueDateInput && dueDateInput.value
+  ? new Date(dueDateInput.value).toISOString()
+  : null;
+
+  
 
   const ownerId = categoryOwners[category];
-  const result = await createTask(task, category, ownerId, taskType, file, textContent);
+  const result = await createTask(task, category, ownerId, taskType, file, textContent, dueDate);
+
+  
   
   const messageEl = document.getElementById('taskMessage');
   
@@ -218,6 +241,18 @@ window.toggleTaskHandler = async (taskId) => {
     alert('Error updating task');
   }
 };
+
+window.deleteFolderHandler = async (category) => {
+  if (!confirm(`Delete the entire folder "${category}" and all its tasks?`)) return;
+
+  const success = await deleteFolder(category);
+  if (success) {
+    await loadAndDisplayTasks();
+  } else {
+    alert('Failed to delete folder');
+  }
+};
+
 
 window.deleteTaskHandler = async (taskId) => {
   if (confirm('Are you sure you want to delete this task?')) {
@@ -276,7 +311,7 @@ window.confirmShare = async () => {
   }
 };
 
-window.confirmReminder = async () => {
+window.confirmSendReminder = async () => {
   const userId = document.getElementById('reminderUserSelect').value;
   const message = document.getElementById('reminderMessage').value;
   

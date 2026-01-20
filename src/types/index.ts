@@ -53,10 +53,11 @@ export interface TaskAttributes {
   completedById: number | null;
   taskType?: string; // 'list', 'text', 'image'
   imageUrl?: string | null;
+  textContent?: string | null;
+  dueDate?: Date | null;
 }
 
 export interface TaskCreationAttributes {
-  id: number;
   userId: number;
   task: string;
   category: string;
@@ -66,6 +67,8 @@ export interface TaskCreationAttributes {
   completedById: number | null;
   taskType?: string;
   imageUrl?: string | null;
+  textContent?: string | null;
+  dueDate?: Date | null;
 }
 
 export interface TaskWithUser extends TaskAttributes {
@@ -124,7 +127,6 @@ export interface CreateTaskBody {
   category: string;
   ownerId?: number;
   taskType?: string;
-  textContent?: string;
 }
 
 export interface CreateShareBody {
