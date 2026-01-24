@@ -4,10 +4,11 @@
 }
 
 body { 
-  background: linear-gradient(135deg, #54aed8, #e2e8f0);
+  background: linear-gradient(135deg, #667eea 0%, #dcbaff 50%, #eb35ff 100%);
   padding: 20px;
   color: #1f2937;
-  margin: 0; 
+  margin: 0;
+  min-height: 100vh;
 }
 
 h1 {
