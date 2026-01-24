@@ -40,7 +40,7 @@ export function displayTasks(tasksByCategory, categoryOwners) {
 
     headerDiv.appendChild(titleDiv);
 
-    // CATEGORY ACTIONS (safe scope)
+    // Category actions
     const categoryActionsDiv = document.createElement('div');
     categoryActionsDiv.className = 'category-actions';
 

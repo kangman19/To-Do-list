@@ -9,6 +9,7 @@ const shareController = new ShareController();
 router.use(requireAuth);
 
 // POST /api/shares - Create a share
+//?single route just pass the middleware and controller method
 router.post('/', shareController.createShare);
 
 export default router;

@@ -10,6 +10,7 @@ export const createReminderRouter = () => {
 }
 
 // All routes require authentication
+//?nice authentication middleware applied globally to this router
 router.use(requireAuth);
 
 // GET /api/reminders/unread - Get user's unread reminders

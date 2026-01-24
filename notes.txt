@@ -25,7 +25,7 @@ src/
 │   ├── Task.ts
 │   └── Share.ts
 ├── types/
-│   └── index.ts           //center for files to call functions
+│   └── index.ts           //center for files to call functions, data handling
 ├── utils/
 │   └── constants.ts         // JWT_SECRET, PORT, etc. centralises config values
 └── app.ts                   // Slim entry point

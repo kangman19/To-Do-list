@@ -76,7 +76,7 @@ function displayReminderNotifications(reminders) {
   `;
 
   container.innerHTML = `
-    <h3 style="margin-top: 0;">📬 New Reminders (${reminders.length})</h3>
+    <h3 style="margin-top: 0;">New Reminders (${reminders.length})</h3>
     <div id="reminderList"></div>
     <button onclick="closeReminderNotifications()" style="width: 100%; margin-top: 10px;">Close</button>
   `;

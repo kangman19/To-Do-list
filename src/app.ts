@@ -35,7 +35,6 @@ app.use((req, res, next) => {
 // Static files 
 app.use(express.static('web-interface'));
 
-app.use(express.static('web-interface'));
 app.use('/uploads', express.static('uploads')); //image uploads
 
 // Home page route 
