@@ -1,26 +1,426 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+body { 
+  background: linear-gradient(135deg, #667eea 0%, #dcbaff 50%, #eb35ff 100%);
+  padding: 20px;
+  color: #1f2937;
+  margin: 0;
+  min-height: 100vh;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+h1 {
+  margin-bottom: 20px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 600;
+  text-align: center;
+  color: #1e293b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Grid layout for category cards */
+#categoriesContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+  padding: 10px;
+}
+
+/* Individual category card */
+.category-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Card color */
+
+.category-card[data-color="blue"] {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+} 
+.category-card[data-color="green"] {
+  background: linear-gradient(135deg, #dbeafe, #24db93);
+} 
+
+/* Category header inside card */
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 10px;
+}
+
+.category-title h2 {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.3;
+}
+
+.category-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.category-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #475569;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.category-actions button:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shared-badge {
+  display: inline-block;
+  background: rgba(99, 102, 241, 0.15);
+  color: #4f46e5;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* Task list inside card */
+.category-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.category-card li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.category-card li:last-child {
+  border-bottom: none;
+}
+
+.category-card li input[type="checkbox"] {
+  margin-top: 2px;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 500;
+  color: #0f172a;
+  word-wrap: break-word;
+}
+
+.task-title.completed {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.task-meta {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.task-actions button {
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: none;
+}
+
+.task-actions button:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Image tasks */
+.task-image-container {
+  margin-top: 8px;
+}
+
+.task-image {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.task-image:hover {
+  transform: scale(1.02);
+}
+
+/* Text tasks */
+.task-text-container {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+
+.task-text-content {
+  color: #475569;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  margin: 6px 0 0 0;
+  white-space: pre-wrap;
+}
+
+/* Form styling */
+form {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+input, select {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  outline: none;
+  background: #fafafa;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+input:focus, select:focus {
+  border-color: #6366f1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+#taskInput {
+  flex: 1;
+  min-width: 200px;
+}
+
+#newCategoryInput {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+textarea {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  outline: none;
+  background: #fafafa;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+textarea:focus {
+  border-color: #6366f1;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+button {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(99, 102, 241, 0.25);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* User info */
+#userInfo {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  font-size: 14px; 
+  
+}
+
+#userInfo button {
+  margin-left: 10px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* Modals */
+#shareModal, #reminderModal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background-color: #ffffff;
+  margin: 10% auto;
+  padding: 24px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modalPop 0.3s ease-out;
+}
+
+@keyframes modalPop {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9) translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.modal-content h3 {
+  margin-top: 0;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.modal-content button {
+  padding: 10px 20px;
+  margin: 6px;
+  font-size: 14px;
+}
+
+.modal-content button:first-of-type {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.modal-content button:last-of-type {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Empty state */
+.empty-category {
+  text-align: center;
+  padding: 30px 20px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #categoriesContainer {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  #userInfo {
+    position: static;
+    margin-bottom: 20px;
+  }
+  
+  form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  input, select, button {
+    width: 100%;
+  }
+}
+
+/* Reminder styles */
+.reminder-item {
+  background: #ffffff;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  border-left: 4px solid #f59e0b;
+  border-radius: 12px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.reminder-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+.reminder-item p {
+  margin: 6px 0;
+}
+
+.reminder-item strong {
+  color: #f59e0b;
+}
+
+#remindersContainer {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }

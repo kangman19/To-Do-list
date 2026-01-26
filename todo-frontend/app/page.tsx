@@ -1,65 +1,616 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+export default function HomePage() {
+  const router = useRouter();
+  
+  // Auth state
+  const [username, setUsername] = useState('');
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Task form state
+  const [taskInput, setTaskInput] = useState('');
+  const [categorySelect, setCategorySelect] = useState('');
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [taskTypeSelect, setTaskTypeSelect] = useState('list');
+  const [dueDateInput, setDueDateInput] = useState('');
+  const [textArea, setTextArea] = useState('');
+  const [imageInput, setImageInput] = useState<File | null>(null);
+  const [taskMessage, setTaskMessage] = useState('');
+
+  // Tasks state
+  const [tasksByCategory, setTasksByCategory] = useState<any>({});
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [categoryOwners, setCategoryOwners] = useState<any>({});
+
+  //Notification state
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [unreadReminders, setUnreadReminders] = useState<any[]>([]);
+    const [notificationCount, setNotificationCount] = useState(0);
+
+  // Modal state
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [reminderModalVisible, setReminderModalVisible] = useState(false);
+  const [currentShareCategory, setCurrentShareCategory] = useState('');
+  const [currentReminderCategory, setCurrentReminderCategory] = useState('');
+  const [shareUserSelect, setShareUserSelect] = useState('');
+  const [reminderUserSelect, setReminderUserSelect] = useState('');
+  const [reminderMessage, setReminderMessage] = useState('');
+
+  // Check authentication on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      setLoading(false);
+      setIsAuthenticated(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/user`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        setUsername(user.username);
+        setUserId(user.userId);
+        setIsAuthenticated(true);
+        
+        // Load tasks and users
+        await loadTasks();
+        await loadUsers();
+      } else {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setIsAuthenticated(false);
+    }
+    
+    setLoading(false);
+  };
+
+  const loadTasks = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/tasks`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTasksByCategory(data);
+        
+        // Extract category owners
+        const owners: any = {};
+        Object.keys(data).forEach(cat => {
+          if (data[cat].tasks.length > 0) {
+            owners[cat] = data[cat].tasks[0].userId;
+          }
+        });
+        setCategoryOwners(owners);
+      }
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAllUsers(data);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/login');
+  };
+
+  const handleTaskSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const category = categorySelect === '__custom__' ? newCategoryInput.trim() : categorySelect;
+
+    if (!category) {
+      alert('Please select or create a category');
+      return;
+    }
+
+    if (taskTypeSelect === 'text' && !textArea.trim()) {
+      alert('Please enter text content');
+      return;
+    }
+
+    if (taskTypeSelect === 'image' && !imageInput) {
+      alert('Please select an image file');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('task', taskInput);
+      formData.append('category', category);
+      formData.append('taskType', taskTypeSelect);
+
+      if (categoryOwners[category]) {
+        formData.append('ownerId', categoryOwners[category]);
+      }
+
+      if (taskTypeSelect === 'image' && imageInput) {
+        formData.append('image', imageInput);
+      } else if (taskTypeSelect === 'text') {
+        formData.append('textContent', textArea);
+      }
+
+      if (dueDateInput) {
+        formData.append('dueDate', new Date(dueDateInput).toISOString());
+      }
+
+      const response = await fetch(`${API_URL}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      if (response.ok) {
+        // Reset form
+        setTaskInput('');
+        setCategorySelect('');
+        setNewCategoryInput('');
+        setTaskTypeSelect('list');
+        setDueDateInput('');
+        setTextArea('');
+        setImageInput(null);
+        setTaskMessage('');
+        
+        // Reload tasks
+        await loadTasks();
+      } else {
+        const data = await response.json();
+        setTaskMessage(data.message || 'Error adding task');
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+      setTaskMessage('Network error');
+    }
+  };
+
+  const handleToggleTask = async (taskId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/tasks/${taskId}/toggle`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        await loadTasks();
+      }
+    } catch (error) {
+      console.error('Error toggling task:', error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: number) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/tasks/${taskId}/delete`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        await loadTasks();
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
+  const handleDeleteFolder = async (category: string) => {
+    if (!confirm(`Delete the entire folder "${category}" and all its tasks?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/tasks/folder/${encodeURIComponent(category)}/delete`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        await loadTasks();
+      }
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+    }
+  };
+
+  const openShareModal = (category: string) => {
+    setCurrentShareCategory(category);
+    setShareModalVisible(true);
+  };
+
+  const closeShareModal = () => {
+    setShareModalVisible(false);
+    setShareUserSelect('');
+  };
+
+  const confirmShare = async () => {
+    if (!shareUserSelect) {
+      alert('Please select a user');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/shares`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          category: currentShareCategory,
+          sharedWithUserId: parseInt(shareUserSelect)
+        })
+      });
+
+      if (response.ok) {
+        alert('Folder shared successfully!');
+        closeShareModal();
+        await loadTasks();
+      } else {
+        const data = await response.json();
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error sharing folder:', error);
+    }
+  };
+
+  const openReminderModal = (category: string) => {
+    setCurrentReminderCategory(category);
+    setReminderModalVisible(true);
+  };
+
+  const closeReminderModal = () => {
+    setReminderModalVisible(false);
+    setReminderUserSelect('');
+    setReminderMessage('');
+  };
+
+  const confirmSendReminder = async () => {
+    if (!reminderUserSelect) {
+      alert('Please select a user');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/reminders`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          receiverId: parseInt(reminderUserSelect),
+          category: currentReminderCategory,
+          message: reminderMessage || null
+        })
+      });
+
+      if (response.ok) {
+        alert('Reminder sent successfully!');
+        closeReminderModal();
+      } else {
+        const data = await response.json();
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+    }
+  };
+
+  // Get unique categories for dropdown
+  const allCategories = Object.keys(tasksByCategory);
+
+  if (loading) {
+    return <div style={{ padding: '50px', textAlign: 'center' }}>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div id="authRequired" style={{ textAlign: 'center', padding: '50px' }}>
+        <p>Please <a href="/login">log in</a> to add tasks.</p>
+        <p>No account? Register <a href="/signup">here</a></p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      {/* User Info Section */}
+      <div id="userInfo">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#f5f5f5' }}>
+          <p style={{ margin: 0 }}>Welcome, <strong>{username}</strong></p>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button onClick={handleLogout} style={{ padding: '8px 12px', cursor: 'pointer', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px' }}>
+              Logout
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </div>
+
+      {/* Task Form */}
+      <div id="taskForm">
+        <h1>To-Do List</h1>
+
+        <form id="addTaskForm" onSubmit={handleTaskSubmit}>
+          <input
+            id="taskInput"
+            placeholder="Enter task title"
+            value={taskInput}
+            onChange={(e) => setTaskInput(e.target.value)}
+            required
+          />
+
+          <select
+            id="categorySelect"
+            value={categorySelect}
+            onChange={(e) => {
+              setCategorySelect(e.target.value);
+              setNewCategoryInput('');
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <option value="">Select or enter category</option>
+            {allCategories.sort().map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+            <option value="__custom__">+ Create New Category</option>
+          </select>
+
+          {categorySelect === '__custom__' && (
+            <input
+              id="newCategoryInput"
+              placeholder="New category (or existing)"
+              value={newCategoryInput}
+              onChange={(e) => setNewCategoryInput(e.target.value)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          )}
+
+          <select
+            id="taskTypeSelect"
+            value={taskTypeSelect}
+            onChange={(e) => {
+              setTaskTypeSelect(e.target.value);
+              setTextArea('');
+              setImageInput(null);
+            }}
           >
-            Documentation
-          </a>
+            <option value="list">List Item</option>
+            <option value="text">Text Note</option>
+            <option value="image">Image</option>
+          </select>
+
+          {/* Due Date Input */}
+          <div style={{ marginTop: '10px' }}>
+            <label htmlFor="dueDateInput" style={{ fontSize: '14px', color: '#666' }}>Due Date (optional):</label>
+            <input
+              type="datetime-local"
+              id="dueDateInput"
+              value={dueDateInput}
+              onChange={(e) => setDueDateInput(e.target.value)}
+              style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+            />
+          </div>
+
+          {/* Text input (shown when taskType is 'text') */}
+          {taskTypeSelect === 'text' && (
+            <div id="textAreaContainer" style={{ width: '100%', marginTop: '10px' }}>
+              <textarea
+                id="textArea"
+                placeholder="Enter detailed text here..."
+                rows={4}
+                value={textArea}
+                onChange={(e) => setTextArea(e.target.value)}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #d1d5db' }}
+              />
+            </div>
+          )}
+
+          {/* Image input (shown when taskType is 'image') */}
+          {taskTypeSelect === 'image' && (
+            <div id="imageInputContainer" style={{ marginTop: '10px' }}>
+              <input
+                type="file"
+                id="imageInput"
+                accept="image/*"
+                onChange={(e) => setImageInput(e.target.files?.[0] || null)}
+                style={{ padding: '8px' }}
+              />
+            </div>
+          )}
+
+          <button type="submit">Add Task</button>
+        </form>
+
+        <p id="taskMessage" style={{ color: 'red' }}>{taskMessage}</p>
+
+        {/* Categories Container */}
+        <div id="categoriesContainer">
+          {Object.keys(tasksByCategory).sort().map((category) => {
+            const catData = tasksByCategory[category];
+            return (
+              <div key={category} className="category-card" data-color="blue">
+                {/* Category Header */}
+                <div className="category-header">
+                  <div className="category-title">
+                    <h2>{category}</h2>
+                    {catData.shared && (
+                      <span className="shared-badge">Shared by {catData.sharedBy}</span>
+                    )}
+                  </div>
+
+                  {/* Category Actions */}
+                  {!catData.shared && (
+                    <div className="category-actions">
+                      <button onClick={() => openShareModal(category)}>Share</button>
+                      <button onClick={() => openReminderModal(category)}>Send reminder</button>
+                      <button onClick={() => handleDeleteFolder(category)}>Delete Folder</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Task List */}
+                {catData.tasks.length === 0 ? (
+                  <div className="empty-category">No tasks yet</div>
+                ) : (
+                  <ul>
+                    {catData.tasks.map((task: any) => (
+                      <li key={task.id}>
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => handleToggleTask(task.id)}
+                        />
+
+                        <div className="task-content">
+                          <div className={task.completed ? 'task-title completed' : 'task-title'}>
+                            {task.task}
+                          </div>
+
+                          {/* Image task */}
+                          {task.taskType === 'image' && task.imageUrl && (
+                            <div className="task-image-container">
+                              <img
+                                src={`${API_URL}${task.imageUrl}`}
+                                alt={task.task}
+                                className="task-image"
+                                onClick={() => window.open(`${API_URL}${task.imageUrl}`, '_blank')}
+                              />
+                            </div>
+                          )}
+
+                          {/* Text task */}
+                          {task.taskType === 'text' && task.textContent && (
+                            <div className="task-text-container">
+                              <p className="task-text-content">{task.textContent}</p>
+                            </div>
+                          )}
+
+                          {/* Metadata */}
+                          <div className="task-meta">
+                            Created by {task.username} • {new Date(task.createdAt).toLocaleString()}
+                            {task.dueDate && (
+                              <>
+                                <br />Due: {new Date(task.dueDate).toLocaleString()}
+                              </>
+                            )}
+                            {task.completed && task.completedBy && task.completedAt && (
+                              <>
+                                <br />Marked done by {task.completedBy} at {new Date(task.completedAt).toLocaleString()}
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="task-actions">
+                          <button onClick={() => handleDeleteTask(task.id)}>Delete</button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Share Modal */}
+      {shareModalVisible && (
+        <div id="shareModal" style={{ display: 'block' }} onClick={(e) => {
+          if ((e.target as HTMLElement).id === 'shareModal') closeShareModal();
+        }}>
+          <div className="modal-content">
+            <h3>Share Folder</h3>
+            <p>Share with:</p>
+            <select
+              id="shareUserSelect"
+              value={shareUserSelect}
+              onChange={(e) => setShareUserSelect(e.target.value)}
+            >
+              <option value="">Select a user</option>
+              {allUsers.map(user => (
+                <option key={user.id} value={user.id}>{user.username}</option>
+              ))}
+            </select>
+            <br /><br />
+            <button onClick={confirmShare}>Share</button>
+            <button onClick={closeShareModal}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Reminder Modal */}
+      {reminderModalVisible && (
+        <div id="reminderModal" style={{ display: 'block' }} onClick={(e) => {
+          if ((e.target as HTMLElement).id === 'reminderModal') closeReminderModal();
+        }}>
+          <div className="modal-content">
+            <h3>Send Reminder</h3>
+            <p>Send reminder to:</p>
+            <select
+              id="reminderUserSelect"
+              value={reminderUserSelect}
+              onChange={(e) => setReminderUserSelect(e.target.value)}
+            >
+              <option value="">Select a user</option>
+              {allUsers.map(user => (
+                <option key={user.id} value={user.id}>{user.username}</option>
+              ))}
+            </select>
+            <br /><br />
+            <textarea
+              id="reminderMessage"
+              placeholder="Enter your reminder message here"
+              value={reminderMessage}
+              onChange={(e) => setReminderMessage(e.target.value)}
+              style={{ width: '100%', padding: '10px', marginTop: '10px' }}
+            />
+            <br /><br />
+            <button onClick={confirmSendReminder}>Send Reminder</button>
+            <button onClick={closeReminderModal}>Cancel</button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

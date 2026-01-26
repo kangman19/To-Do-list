@@ -1,75 +1,65 @@
-'use client';  
+'use client';
 
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
 export default function LoginPage() {
-  // State instead of getElementById
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  
-  // Next.js router instead of window.location.href
+  const [message, setMessage] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.message);
-        return;
-      }
-
       const data = await response.json();
-      localStorage.setItem('token', data.token);
-      router.push('/');  // Navigate to home page
-      
-    } catch (err) {
-      setError('Login failed. Please try again.');
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        router.push('/');
+      } else {
+        setMessage(data.message || 'Login failed');
+      }
+    } catch (error) {
+      setMessage('Network error. Please try again.');
     }
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
+    <>
       <h1>Login</h1>
-      
-      <form onSubmit={handleSubmit}>
+      <form id="loginForm" onSubmit={handleSubmit}>
         <input
           type="text"
+          name="username"
+          id="username"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
           required
         />
-        
         <input
           type="password"
+          name="password"
+          id="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ width: '100%', padding: '10px', marginBottom: '10px' }}
           required
         />
-        
-        <button type="submit" style={{ width: '100%', padding: '10px' }}>
-          Login
-        </button>
+        <button type="submit">Login</button>
       </form>
-      
-      {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-      
-      <p style={{ marginTop: '20px' }}>
-        Don't have an account? <a href="/signup">Sign up</a>
-      </p>
-    </div>
+      <p id="message">{message}</p>
+      <p>Don't have an account? <a href="/signup">Sign up here</a></p>
+    </>
   );
 }
