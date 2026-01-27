@@ -26,6 +26,7 @@ export default (sequelize: Sequelize) => {
       id: {
         type: DataTypes.BIGINT,
         primaryKey: true,
+        autoIncrement: true,  // Add auto-increment
         allowNull: false
       },
       senderId: {

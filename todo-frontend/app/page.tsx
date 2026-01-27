@@ -48,6 +48,7 @@ export default function HomePage() {
     checkAuth();
   }, []);
 
+
   const checkAuth = async () => {
     const token = localStorage.getItem('token');
     
@@ -71,6 +72,7 @@ export default function HomePage() {
         // Load tasks and users
         await loadTasks();
         await loadUsers();
+        await loadReminders();
       } else {
         localStorage.removeItem('token');
         setIsAuthenticated(false);
@@ -83,6 +85,59 @@ export default function HomePage() {
     setLoading(false);
   };
 
+  //Loading reminders
+
+// Load unread reminders
+const loadReminders = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/reminders/unread`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      setUnreadReminders(data);
+      setNotificationCount(data.length);
+    }
+  } catch (error) {
+    console.error('Error loading reminders:', error);
+  }
+};
+
+// Toggle notifications panel
+const toggleNotifications = async () => {
+  if (notificationsVisible) {
+    setNotificationsVisible(false);
+  } else {
+    await loadReminders();
+    setNotificationsVisible(true);
+  }
+};
+
+// Dismiss a reminder
+const dismissReminder = async (reminderId: number) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/reminders/${reminderId}/read`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      await loadReminders();
+    }
+  } catch (error) {
+    console.error('Error dismissing reminder:', error);
+  }
+};
+
+//Close notification panel
+const closeNotifications = () => {
+  setNotificationsVisible(false);
+};
+
+//Loading tasks
   const loadTasks = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -361,12 +416,311 @@ export default function HomePage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: '#f5f5f5' }}>
           <p style={{ margin: 0 }}>Welcome, <strong>{username}</strong></p>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {/* Notification button */}
+            <button
+        id="notificationBtn"
+        onClick={toggleNotifications}
+        style={{
+          padding: '8px 12px',
+          cursor: 'pointer',
+          background: '#667eea',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          position: 'relative'
+        }}
+      >
+        🔔
+        {notificationCount > 0 && (
+          <span
+            id="notificationBadge"
+            style={{
+              display: 'block',
+              position: 'absolute',
+              top: '-5px',
+              right: '-5px',
+              background: 'red',
+              color: 'white',
+              borderRadius: '50%',
+              width: '20px',
+              height: '20px',
+              fontSize: '12px',
+              lineHeight: '20px'
+            }}
+          >
+            {notificationCount > 9 ? '9+' : notificationCount}
+          </span>
+        )}
+      </button>
+
+            {/* Logout button */}
             <button onClick={handleLogout} style={{ padding: '8px 12px', cursor: 'pointer', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px' }}>
               Logout
             </button>
           </div>
         </div>
       </div>
+
+      {/* Notification Panel */}
+      {notificationsVisible && (
+        <div
+          id="notificationPanel"
+          style={{
+            position: 'fixed',
+            top: '60px',
+            right: '20px',
+            width: '350px',
+            maxHeight: '500px',
+            overflowY: 'auto',
+            background: 'white',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            zIndex: 1000,
+            padding: '15px'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0 }}>Notifications</h3>
+            <button
+              onClick={closeNotifications}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                color: '#666'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {unreadReminders.length === 0 ? (
+            <p style={{ color: '#666', textAlign: 'center', padding: '20px' }}>No new reminders</p>
+          ) : (
+            <div id="reminderList">
+              {unreadReminders.map((reminder: any) => (
+                <div
+                  key={reminder.id}
+                  style={{
+                    padding: '12px',
+                    marginBottom: '10px',
+                    background: '#f9f9f9',
+                    borderRadius: '6px',
+                    borderLeft: '4px solid #667eea'
+                  }}
+                >
+                  <div style={{ marginBottom: '8px' }}>
+                    <strong>{reminder.senderUsername}</strong> sent you a reminder
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '8px' }}>
+                    Category: <strong>{reminder.category}</strong>
+                  </div>
+                  {reminder.message && (
+                    <div style={{ fontSize: '14px', marginBottom: '8px', fontStyle: 'italic' }}>
+                      "{reminder.message}"
+                    </div>
+                  )}
+                  <div style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>
+                    {new Date(reminder.createdAt).toLocaleString()}
+                  </div>
+                  <button
+                    onClick={() => dismissReminder(reminder.id)}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#667eea',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {shareModalVisible && (
+        <div
+          id="shareModal"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000
+          }}
+        >
+          <div
+            style={{
+              background: 'white',
+              padding: '25px',
+              borderRadius: '10px',
+              width: '400px',
+              maxWidth: '90%'
+            }}
+          >
+            <h3>Share "{currentShareCategory}" with:</h3>
+            <select
+              value={shareUserSelect}
+              onChange={(e) => setShareUserSelect(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                marginBottom: '15px',
+                borderRadius: '5px',
+                border: '1px solid #ddd'
+              }}
+            >
+              <option value="">Select a user</option>
+              {allUsers
+                .filter(u => u.id !== userId)
+                .map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.username}
+                  </option>
+                ))}
+            </select>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={confirmShare}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#667eea',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Share
+              </button>
+              <button
+                onClick={closeShareModal}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#ccc',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reminder Modal */}
+      {reminderModalVisible && (
+        <div
+          id="reminderModal"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000
+          }}
+        >
+          <div
+            style={{
+              background: 'white',
+              padding: '25px',
+              borderRadius: '10px',
+              width: '400px',
+              maxWidth: '90%'
+            }}
+          >
+            <h3>Send reminder for "{currentReminderCategory}"</h3>
+            <select
+              value={reminderUserSelect}
+              onChange={(e) => setReminderUserSelect(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                marginBottom: '15px',
+                borderRadius: '5px',
+                border: '1px solid #ddd'
+              }}
+            >
+              <option value="">Select a user</option>
+              {allUsers
+                .filter(u => u.id !== userId)
+                .map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.username}
+                  </option>
+                ))}
+            </select>
+            <textarea
+              placeholder="Optional message"
+              value={reminderMessage}
+              onChange={(e) => setReminderMessage(e.target.value)}
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '10px',
+                marginBottom: '15px',
+                borderRadius: '5px',
+                border: '1px solid #ddd',
+                resize: 'vertical'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={confirmSendReminder}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#667eea',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Send
+              </button>
+              <button
+                onClick={closeReminderModal}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#ccc',
+                  color: '#333',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Task Form */}
       <div id="taskForm">
@@ -554,63 +908,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Share Modal */}
-      {shareModalVisible && (
-        <div id="shareModal" style={{ display: 'block' }} onClick={(e) => {
-          if ((e.target as HTMLElement).id === 'shareModal') closeShareModal();
-        }}>
-          <div className="modal-content">
-            <h3>Share Folder</h3>
-            <p>Share with:</p>
-            <select
-              id="shareUserSelect"
-              value={shareUserSelect}
-              onChange={(e) => setShareUserSelect(e.target.value)}
-            >
-              <option value="">Select a user</option>
-              {allUsers.map(user => (
-                <option key={user.id} value={user.id}>{user.username}</option>
-              ))}
-            </select>
-            <br /><br />
-            <button onClick={confirmShare}>Share</button>
-            <button onClick={closeShareModal}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Reminder Modal */}
-      {reminderModalVisible && (
-        <div id="reminderModal" style={{ display: 'block' }} onClick={(e) => {
-          if ((e.target as HTMLElement).id === 'reminderModal') closeReminderModal();
-        }}>
-          <div className="modal-content">
-            <h3>Send Reminder</h3>
-            <p>Send reminder to:</p>
-            <select
-              id="reminderUserSelect"
-              value={reminderUserSelect}
-              onChange={(e) => setReminderUserSelect(e.target.value)}
-            >
-              <option value="">Select a user</option>
-              {allUsers.map(user => (
-                <option key={user.id} value={user.id}>{user.username}</option>
-              ))}
-            </select>
-            <br /><br />
-            <textarea
-              id="reminderMessage"
-              placeholder="Enter your reminder message here"
-              value={reminderMessage}
-              onChange={(e) => setReminderMessage(e.target.value)}
-              style={{ width: '100%', padding: '10px', marginTop: '10px' }}
-            />
-            <br /><br />
-            <button onClick={confirmSendReminder}>Send Reminder</button>
-            <button onClick={closeReminderModal}>Cancel</button>
-          </div>
-        </div>
-      )}
-    </>
+          </>
   );
 }

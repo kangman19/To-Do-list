@@ -5,21 +5,13 @@ import { requireAuth } from '../middleware/auth.js';
 const router = Router();
 const reminderController = new ReminderController();
 
-export const createReminderRouter = () => {
-  return router;
-}
+// Get unread reminders
+router.get('/unread', requireAuth, reminderController.getUnreadReminders);
 
-// All routes require authentication
-//?nice authentication middleware applied globally to this router
-router.use(requireAuth);
+// Send a reminder
+router.post('/', requireAuth, reminderController.sendReminder);
 
-// GET /api/reminders/unread - Get user's unread reminders
-router.get('/unread', reminderController.getUnreadReminders);
-
-// POST /api/reminders - Send a reminder
-router.post('/', reminderController.sendReminder);
-
-// POST /api/reminders/:reminderId/read - Mark reminder as read
-router.post('/:reminderId/read', reminderController.markAsRead);
+// Mark reminder as read
+router.post('/:id/read', requireAuth, reminderController.markAsRead);
 
 export default router;

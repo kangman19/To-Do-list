@@ -5,9 +5,11 @@ import path from 'path';
 import { connectDatabase } from './config/database.js';
 import passport from './config/passport.js';
 import { createRouter } from './routes/index.js';
+import reminderRouter from './routes/reminder.js';
 import { SocketService } from './services/socketService.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { PORT } from './utils/constants.js';
+import cors from 'cors';
 
 // Create Express app
 const app = express();
@@ -21,7 +23,11 @@ const io = new SocketIOServer(server, {
 // Initialize Socket Service
 const socketService = new SocketService(io);
 
-// Middleware
+// Middleware - ORDER MATTERS!
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
@@ -34,15 +40,15 @@ app.use((req, res, next) => {
 
 // Static files 
 app.use(express.static('web-interface'));
-
-app.use('/uploads', express.static('uploads')); //image uploads
+app.use('/uploads', express.static('uploads')); // image uploads
 
 // Home page route 
 app.get('/', (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, '../web-interface/home.html'));
 });
 
-// API routes 
+// API routes - REGISTER REMINDER ROUTES BEFORE THE GENERAL ROUTER
+app.use('/api/reminders', reminderRouter);
 app.use(createRouter(socketService));
 
 // Error handling 
